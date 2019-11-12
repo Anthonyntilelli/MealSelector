@@ -4,6 +4,7 @@ module MealSelector
   # Data container for meals (raised Exceptions must be handled by caller)
   class Meal
     @@all = []
+    @@categories = []
     attr_reader :id, :name, :category, :instructions, \
                 :type, :youtube, :ingredient
 
@@ -34,12 +35,9 @@ module MealSelector
       @@all.find { |meal| meal.id == id }
     end
 
-    def self.all
-      @@all
-    end
-
     def self.clear
       @@all.clear
+      @@categories.clear
     end
 
     def self.create_from_array(meals_hash)
@@ -52,6 +50,26 @@ module MealSelector
       meal_hash['meals'].collect { |meal| Meal.new(meal) }
     end
 
+    def self.set_categories(categories_arr)
+      # sets a list of meal categories by Api_interface
+      raise 'categories_arr must be an Array' unless categories_arr.is_a?(Array)
+      raise 'categories must not be empty' if  categories_arr.empty?
+
+      main_count = categories_arr.count
+      processed_categories = categories_arr.collect { |cat| cat["strCategory"] }.compact
+      # check for nil categories
+      raise "Count Error in categories" if main_count != processed_categories.count
+      @@categories = processed_categories
+    end
+
+    def self.all
+      @@all
+    end
+
+    def self.categories
+      @@categories
+    end
+  
     private
 
     def save_and_freeze

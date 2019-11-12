@@ -2,6 +2,7 @@
 
 require 'open-uri'
 require 'json'
+require_relative "meal.rb" 
 
 module MealSelector
   # Communicates with Mealdb database for meal data
@@ -22,8 +23,8 @@ module MealSelector
       warn('Warning: API key `1` is only for development') if key == '1'
       raise 'version must be integer above or equal to one' \
       unless version.is_a?(Integer) && version.to_i >= 1
-
-      @api_url = API_ENDPOINT + "/v#{version}/#{key}/"
+      @version = version
+      @key = key
     end
 
     def search_meal_name(name)
@@ -40,7 +41,7 @@ module MealSelector
       # Lookup a single random meal
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/random.php
       raw_content = nil
-      connection = open("#{@api_url}random.php").each do |json|
+      connection = open("#{api_url}random.php").each do |json|
         raw_content = json
       end
       connection.close
@@ -57,6 +58,21 @@ module MealSelector
       # List all Categories and Ingredients
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/list.php?c=list
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/list.php?i=list
+      raw_categories = nil
+      raw_ingredients = nil
+      # Categories
+      connection = open("#{api_url}list.php?c=list").each do |json|
+        raw_categories = json
+      end
+      connection.close
+      # Ingredients
+      connection = open("#{api_url}list.php?i=list").each do |json|
+        raw_ingredients = json
+      end
+      connection.close
+      MealSelector::Meal.set_categories(JSON.parse(raw_categories)['meals'])
+      # TODO: Create Ingredients
+
     end
 
     def meals_by_main_ingredient(main_ingredient)
@@ -69,12 +85,20 @@ module MealSelector
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?c=Seafood
     end
 
-    def save_api_key(path = '~/.Mealdbkey')
+    def save(path = '~/.Mealdbkey')
+
       # Saves api_key and version to a file
     end
 
     def self.load(path = '~/.Mealdbkey')
       # Load api_key and version from a file
     end
+
+    private
+
+    def api_url
+      API_ENDPOINT + "/v#{@version}/#{@key}/"
+    end
+
   end
 end
