@@ -15,6 +15,8 @@ module MealSelector
             unless meal_hash['idMeal'].is_a?(String)
 
       @id = meal_hash.delete('idMeal')
+      existing_meal = @@all.find { |meal| meal.id == @id }
+      return existing_meal if !existing_meal.nil?
       @name = meal_hash.delete('strMeal')
       @category = meal_hash.delete('strCategory')
       @instructions = meal_hash.delete('strInstructions')
@@ -24,7 +26,7 @@ module MealSelector
       save_and_freeze
     end
 
-    def self.meal_by_id(id)
+    def self.find_by_id(id)
       # Returns meal by id if exists
       # Return nil if it does not exist
       raise 'id must be a string' unless id.is_a?(String)
@@ -40,7 +42,7 @@ module MealSelector
       @@all.clear
     end
 
-    def self.create_meals_from_array(meals_hash)
+    def self.create_from_array(meals_hash)
       # Create new meals from array of meals and returns array of Meal objects
       raise 'meals_hash must me a hash' unless meals_hash.is_a?(Hash)
 
@@ -54,7 +56,7 @@ module MealSelector
 
     def save_and_freeze
       # Saves meal to @@all if it does not already exist
-      if Meal.meal_by_id(id).nil?
+      if Meal.find_by_id(id).nil?
         @@all << self
         freeze
         true
@@ -71,7 +73,7 @@ module MealSelector
         case key
         when /strIngredient.+/
           location = key.gsub('strIngredient', '')
-          @ingredient[value] = meal_hash['strMeasure' + location.to_s]
+          @ingredient[value] = left_over_meal_hash['strMeasure' + location.to_s]
         end
       end
     end

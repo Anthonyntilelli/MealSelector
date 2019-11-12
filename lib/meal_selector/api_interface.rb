@@ -7,7 +7,7 @@ module MealSelector
   # Communicates with Mealdb database for meal data
   # Network issue will raised exceptions which are expected to handle by caller
   class ApiInterface
-    API_ENDPOINT = 'https://www.themealdb.com/api/json/'
+    API_ENDPOINT = 'https://www.themealdb.com/api/json'
 
     def initialize(key, version)
       # Sets API key and Version
@@ -45,7 +45,7 @@ module MealSelector
       end
       connection.close
       json_meal = JSON.parse(raw_content)
-      # to do convert to meal
+      meal = MealSelector::Meal.new(json_meal["meals"][0])
     end
 
     def list_all_meal_categories
