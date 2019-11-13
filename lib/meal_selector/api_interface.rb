@@ -49,11 +49,6 @@ module MealSelector
       meal = MealSelector::Meal.new(json_meal["meals"][0])
     end
 
-    def list_all_meal_categories
-      # List all meal categories
-      # EXAMPLE: https://www.themealdb.com/api/json/v1/1/categories.php
-    end
-
     def populate_categories
       # Gets List of Categories for meals and set them.
       # List all Categories
@@ -82,13 +77,21 @@ module MealSelector
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?c=Seafood
     end
 
-    def save(path = '~/.Mealdbkey')
-
-      # Saves api_key and version to a file
+    def save(path = "#{Dir.home}/.Mealdbkey")
+      # Saves ApiInterface to a file (will overwrite existing file)
+      # TO DO check if path to file
+      File.open(path, 'w') { |file| file.write("version: #{@version}\nkey: #{@key}") }
     end
 
-    def self.load(path = '~/.Mealdbkey')
-      # Load api_key and version from a file
+    def self.load(path = "#{Dir.home}/.Mealdbkey")
+      # Creates ApiInterface from a file
+      # TODO: CHECK IF regular file
+      raw_data = File.read(path).chomp
+      raw_data = raw_data.split
+      raise 'Incorrect format for Meal Api Key file' unless raw_data.count == 4
+      raise "Error finding version info (#{raw_data[0]})" unless raw_data[0] == 'version:'
+      raise "Error finding key info (#{raw_data[2]})" unless raw_data[2] == 'key:'
+      ApiInterface.new(raw_data[3], raw_data[1].to_i)
     end
 
     private
