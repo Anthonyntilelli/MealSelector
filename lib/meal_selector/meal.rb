@@ -35,9 +35,17 @@ module MealSelector
       @@all.find { |meal| meal.id == id }
     end
 
-    def self.clear
+    def self.clear_all
       @@all.clear
       @@categories.clear
+    end
+
+    def self.categories_clear
+      @@categories.clear
+    end
+
+    def self.meal_clear
+      @@all.clear
     end
 
     def self.create_from_array(meals_hash)
