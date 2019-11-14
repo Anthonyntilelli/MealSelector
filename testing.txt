@@ -1,7 +1,0 @@
-# TEST
-# require_relative "lib/meal_selector/meal.rb" 
-require_relative "lib/meal_selector/api_interface.rb"
-test = MealSelector::ApiInterface.new("1",1)
-MealSelector::ApiInterface.load
-# a_meal = test.random_meal
-# MealSelector::Meal.all.count

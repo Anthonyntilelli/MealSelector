@@ -10,6 +10,7 @@ module MealSelector
 
     def initialize(meal_hash)
       # Converts hash into 1 meal object
+      # If meal object already exist it will return exiting object
       raise 'meal_hash must be a hash' unless meal_hash.is_a?(Hash)
 
       raise 'meal_hash is not a hash for a meal' \
@@ -53,9 +54,9 @@ module MealSelector
       raise 'meals_hash must me a hash' unless meals_hash.is_a?(Hash)
 
       raise 'meals_hash must be an array of meals' \
-            unless meal_hash['meals'].is_a?(Array)
+            unless meals_hash['meals'].is_a?(Array)
 
-      meal_hash['meals'].collect { |meal| Meal.new(meal) }
+      meals_hash['meals'].collect { |meal| Meal.new(meal) }
     end
 
     def self.set_categories(categories_arr)

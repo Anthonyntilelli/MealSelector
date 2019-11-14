@@ -30,6 +30,16 @@ module MealSelector
     def search_meal_name(name)
       # Search meal by name
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/search.php?s=Arrabiata
+      raise "Name is not a string" unless name.is_a?(String)
+      name = name.gsub(" ","%20")
+
+      raw_content = nil
+      connection = open("#{api_url}search.php?s=#{name}").each do |json|
+        raw_content = json
+      end
+      connection.close
+      json_meal = JSON.parse(raw_content)
+      MealSelector::Meal.create_from_array(json_meal)
     end
 
     def meal_by_id(id)
@@ -79,13 +89,12 @@ module MealSelector
 
     def save(path = "#{Dir.home}/.Mealdbkey")
       # Saves ApiInterface to a file (will overwrite existing file)
-      # TO DO check if path to file
       File.open(path, 'w') { |file| file.write("version: #{@version}\nkey: #{@key}") }
     end
 
     def self.load(path = "#{Dir.home}/.Mealdbkey")
       # Creates ApiInterface from a file
-      # TODO: CHECK IF regular file
+      raise "File #{path} does not exist!" unless File.exist?(path)
       raw_data = File.read(path).chomp
       raw_data = raw_data.split
       raise 'Incorrect format for Meal Api Key file' unless raw_data.count == 4
