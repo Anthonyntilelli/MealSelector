@@ -30,7 +30,7 @@ module MealSelector
     def search_meal_name(name)
       # Search meal by name
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/search.php?s=Arrabiata
-      raise "Name is not a string" unless name.is_a?(String)
+      raise 'Name is not a string' unless name.is_a?(String)
       name = name.gsub(" ","%20")
 
       raw_content = nil
@@ -45,6 +45,19 @@ module MealSelector
     def meal_by_id(id)
       # Lookup full meal details by id
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/lookup.php?i=52772
+
+      raise "id is not an Integer (#{id.class})" unless id.is_a?(Integer)
+      existing_meal = MealSelector::Meal.find_by_id(id.to_s)
+      return [ existing_meal ] if existing_meal
+
+      # Not already looked up
+      raw_content = nil
+      connection = open("#{api_url}lookup.php?i=#{id}").each do |json|
+        raw_content = json
+      end
+      connection.close
+      json_meal = JSON.parse(raw_content)
+      MealSelector::Meal.create_from_array(json_meal)
     end
 
     def random_meal
@@ -56,7 +69,7 @@ module MealSelector
       end
       connection.close
       json_meal = JSON.parse(raw_content)
-      meal = MealSelector::Meal.new(json_meal["meals"][0])
+      MealSelector::Meal.create_from_array(json_meal)
     end
 
     def populate_categories
@@ -75,6 +88,7 @@ module MealSelector
     def search_by_ingredient(primary_ingredient)
       # Search by primary ingredient
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?i=chicken_breast
+
     end
 
     def meals_by_main_ingredient(main_ingredient)
