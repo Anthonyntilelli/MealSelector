@@ -25,6 +25,10 @@ module MealSelector
       @type = meal_hash.delete('strTags')
       @youtube = meal_hash.delete('strYoutube')
       setup_ingredients(meal_hash)
+
+      # Prevent incomplete Meal
+      raise "Error setting up instructions" if @instructions.empty? || @instructions.nil?
+      raise "Error setting up ingredients" if @ingredient.empty? || @ingredient.nil?
       save_and_freeze
     end
 
@@ -95,7 +99,8 @@ module MealSelector
     def setup_ingredients(left_over_meal_hash)
       @ingredient = {} # 'strIngredient#' => 'strMeasure#'
       left_over_meal_hash.each do |key, value|
-        next if value == '' && value == ' ' # prevent blank entries
+        next if value == '' || value == ' ' || value.nil? # prevent blank entries
+        next if key == '' || key == ' ' || key.nil? # prevent blank entries
 
         case key
         when /strIngredient.+/
@@ -103,6 +108,7 @@ module MealSelector
           @ingredient[value] = left_over_meal_hash['strMeasure' + location.to_s]
         end
       end
+      @ingredient = @ingredient.compact
     end
   end
 end

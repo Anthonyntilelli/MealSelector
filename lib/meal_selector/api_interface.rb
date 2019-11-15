@@ -86,14 +86,21 @@ module MealSelector
     end
 
     def search_by_ingredient(primary_ingredient)
-      # Search by primary ingredient
+      # Search by primary main ingredient
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?i=chicken_breast
+      raise 'primary_ingredient is not a string' unless primary_ingredient.is_a?(String)
+      primary_ingredient = primary_ingredient.gsub(" ","%20")
 
-    end
-
-    def meals_by_main_ingredient(main_ingredient)
-      # Filter by main ingredient
-      # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?i=chicken_breast
+      raw_content = nil
+      connection = open("#{api_url}filter.php?i=#{primary_ingredient}").each do |json|
+        raw_content = json
+      end
+      connection.close
+      json_meal = JSON.parse(raw_content)
+      # partial reasults are returned by this api call.
+      json_meal['meals'].collect do | hash_meal |
+        meal_by_id(hash_meal['idMeal'].to_i)
+      end
     end
 
     def meals_by_category(category)
