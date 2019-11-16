@@ -2,7 +2,7 @@
 
 require 'open-uri'
 require 'json'
-require_relative "meal.rb" 
+require_relative "meal.rb"
 
 module MealSelector
   # Communicates with Mealdb database for meal data
@@ -106,6 +106,19 @@ module MealSelector
     def meals_by_category(category)
       # Filter by Category
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?c=Seafood
+      populate_categories if MealSelector::Meal.categories.empty? || MealSelector::Meal.categories.nil?
+      raise "#{category} is not a valid category" unless MealSelector::Meal.categories.include?(category)
+
+      raw_content = nil
+      connection = open("#{api_url}filter.php?c=#{category}").each do |json|
+        raw_content = json
+      end
+      connection.close
+      json_meal = JSON.parse(raw_content)
+      # partial reasults are returned by this api call.
+      json_meal['meals'].collect do | hash_meal |
+        meal_by_id(hash_meal['idMeal'].to_i)
+      end
     end
 
     def save(path = "#{Dir.home}/.Mealdbkey")
