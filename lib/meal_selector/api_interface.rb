@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require 'open-uri'
-require 'json'
-require_relative "meal.rb"
-
 module MealSelector
   # Communicates with Mealdb database for meal data
   # Network issue will raised exceptions which are expected to handle by caller
@@ -82,7 +78,7 @@ module MealSelector
         raw_categories = json
       end
       connection.close
-      MealSelector::Meal.set_categories(JSON.parse(raw_categories)['meals'])
+      Meal.set_categories(JSON.parse(raw_categories)['meals'])
     end
 
     def search_by_ingredient(primary_ingredient)
