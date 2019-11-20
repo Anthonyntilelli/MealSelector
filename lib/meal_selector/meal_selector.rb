@@ -8,11 +8,14 @@ require_relative "frontend.rb"
 module MealSelector
   class MealSelector
     def initialize(load)
+      raise "Invalid load value, should be true or false" if !!load != load
       @interface = nil
+      @frontend = nil
       if load
         begin
           @interface = ApiInterface.load()
           @interface.populate_categories()
+          @frontend = Frontend.new()
         rescue
           abort("Failure Loading file")
         end
@@ -27,11 +30,13 @@ module MealSelector
           begin
             @interface = ApiInterface.new(key,version.to_i)
             @interface.populate_categories()
+            @frontend = Frontend.new()
           rescue
             puts "Error when setting up key and version, try again."
             key = nil
             version = nil
             @interface = nil
+            @frontend = nil
           end
         end
         answer = nil
@@ -48,6 +53,8 @@ module MealSelector
     end
 
     def start()
+      @frontend.welcome()
+      @frontend.menu()
     end
   end
 end
