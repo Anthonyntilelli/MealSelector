@@ -4,6 +4,7 @@ module MealSelector
   # Data container for meals (raised Exceptions must be handled by caller)
   class Meal
     @@all = []
+    @@favorite = []
     @@categories = []
     attr_reader :id, :name, :category, :instructions, \
                 :type, :youtube, :ingredient

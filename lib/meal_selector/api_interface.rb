@@ -35,7 +35,7 @@ module MealSelector
       end
       connection.close
       json_meal = JSON.parse(raw_content)
-      MealSelector::Meal.create_from_array(json_meal)
+      Meal.create_from_array(json_meal)
     end
 
     def meal_by_id(id)
@@ -43,7 +43,7 @@ module MealSelector
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/lookup.php?i=52772
 
       raise "id is not an Integer (#{id.class})" unless id.is_a?(Integer)
-      existing_meal = MealSelector::Meal.find_by_id(id.to_s)
+      existing_meal = Meal.find_by_id(id.to_s)
       return [ existing_meal ] if existing_meal
 
       # Not already looked up
@@ -53,7 +53,7 @@ module MealSelector
       end
       connection.close
       json_meal = JSON.parse(raw_content)
-      MealSelector::Meal.create_from_array(json_meal)
+      Meal.create_from_array(json_meal)
     end
 
     def random_meal
@@ -65,7 +65,7 @@ module MealSelector
       end
       connection.close
       json_meal = JSON.parse(raw_content)
-      MealSelector::Meal.create_from_array(json_meal)
+      Meal.create_from_array(json_meal)
     end
 
     def populate_categories
@@ -102,8 +102,8 @@ module MealSelector
     def meals_by_category(category)
       # Filter by Category
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?c=Seafood
-      populate_categories if MealSelector::Meal.categories.empty? || MealSelector::Meal.categories.nil?
-      raise "#{category} is not a valid category" unless MealSelector::Meal.categories.include?(category)
+      populate_categories if Meal.categories.empty? || Meal.categories.nil?
+      raise "#{category} is not a valid category" unless Meal.categories.include?(category)
 
       raw_content = nil
       connection = open("#{api_url}filter.php?c=#{category}").each do |json|
