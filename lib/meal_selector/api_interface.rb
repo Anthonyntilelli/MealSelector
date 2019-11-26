@@ -40,10 +40,7 @@ module MealSelector
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/lookup.php?i=52772
 
       raise "id is not an Integer (#{id.class})" unless id.is_a?(Integer)
-      existing_meal = Meal.find_by_id(id.to_s)
-      return [ existing_meal ] if existing_meal
 
-      # Not already looked up
       raw_content = nil
       connection = open("#{api_url}lookup.php?i=#{id}").each do |json|
         raw_content = json

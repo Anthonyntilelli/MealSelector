@@ -3,11 +3,10 @@
 module MealSelector
   # Data container for a fully looked up Meal (raised Exceptions must be handled by caller)
   class Meal
-    @@all = []
-    @@favorite = []
+    # @@favorite = {}
     @@categories = []
     attr_reader :id, :name, :category, :instructions, \
-                :type, :youtube, :ingredient
+                :type, :ingredient, :youtube
 
     def initialize(meal_hash)
       # Converts hash into 1 meal object
@@ -18,8 +17,6 @@ module MealSelector
             unless meal_hash['idMeal'].is_a?(String)
 
       @id = meal_hash.delete('idMeal')
-      existing_meal = @@all.find { |meal| meal.id == @id }
-      return existing_meal if !existing_meal.nil?
       @name = meal_hash.delete('strMeal')
       @category = meal_hash.delete('strCategory') || "Undefined"
       @instructions = meal_hash.delete('strInstructions')
@@ -30,19 +27,24 @@ module MealSelector
       # Prevent incomplete Meal
       raise "Error setting up instructions" if @instructions.empty? || @instructions.nil?
       raise "Error setting up ingredients" if @ingredient.empty? || @ingredient.nil?
-      save_and_freeze
+      freeze
     end
 
-    def self.find_by_id(id)
-      # Returns meal by id if exists
-      # Return nil if it does not exist
-      raise 'id must be a string' unless id.is_a?(String)
+    # def add_to_favorites
+    #   if @@favorite[self.id].nil?
+    #     @@favorite[self.id] = self
+    #     true
+    #   else
+    #     false
+    #   end
+    # end
 
-      @@all.find { |meal| meal.id == id }
-    end
+    # def self.favorite
+    #   @@favorite
+    # end
 
     def self.clear_all
-      @@all.clear
+      # @@favorite.clear
       @@categories.clear
     end
 
@@ -50,9 +52,9 @@ module MealSelector
       @@categories.clear
     end
 
-    def self.meal_clear
-      @@all.clear
-    end
+    # def self.favorite_clear
+    #   @@favorite.clear
+    # end
 
     def self.create_from_array(meals_hash)
       # Create new meals from array of meals and returns array of Meal objects
@@ -76,28 +78,22 @@ module MealSelector
       @@categories = processed_categories
     end
 
-    def self.all
-      @@all
-    end
-
     def self.categories
       @@categories
     end
+
+    # def self.save_favorite(path = "#{Dir.home}/.favorite_meals")
+    #   if @@favorite.empty? # delete file if exits without favorites
+    #     File.delete(path) if File.exist?(path)
+    #   else
+    #   # Saves favorites to a file (will overwrite existing file)
+    #   File.open(path, 'w') { |file| file.write("version: #{@version}\nkey: #{@key}") }
+    # end
   
     private
 
-    def save_and_freeze
-      # Saves meal to @@all if it does not already exist
-      if Meal.find_by_id(id).nil?
-        @@all << self
-        freeze
-        true
-      else
-        false
-      end
-    end
-
     def setup_ingredients(left_over_meal_hash)
+      # Assigns 'strIngredient#' => 'strMeasure#' together
       @ingredient = {} # 'strIngredient#' => 'strMeasure#'
       left_over_meal_hash.each do |key, value|
         next if value == '' || value == ' ' || value.nil? # prevent blank entries
