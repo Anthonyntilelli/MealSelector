@@ -54,11 +54,11 @@ module MealSelector
       input_phase = true
       while !quit
         clear()
-        puts "Thank you for choosing Meal Selector."
+        puts "Thank you for using Meal Selector."
         puts "Please select a number from the options below:"
-        puts "`1` Search for meal by name"
+        puts "`1` Search for meal by name (not Implimented)"
         puts "`2` Show meals by a category"
-        puts "`3` Show meals by a main ingrediant"
+        puts "`3` Show meals by a main ingrediant (not Implimented)"
         puts "`4` Show me a random meal"
         #TODO puts "5. View favorite meals"
         puts '`0` Exit program'
@@ -74,7 +74,7 @@ module MealSelector
             search_meal_by_name()
             input_phase = false
           when 2
-            raise get_meals_by_categories()
+            get_meals_by_categories()
             input_phase = false
           when 3
             get_meals_by_main_ingrediant()
@@ -104,17 +104,38 @@ module MealSelector
     end
 
     def get_meals_by_categories
-      puts "Show meals by a category"
-      sleep 1
+      choice = nil
+      clear()
+      puts "Select a meal category:"
+      Meal.categories.each_index do |index| 
+        puts "=> `#{index+1}` #{Meal.categories[index]}"
+      end
+      puts '=> `0` Return to menu'
+
+      while !choice
+        choice = begin
+          Integer(gets.chomp)
+        rescue ArgumentError
+          -1
+        end
+        
+        if choice == 0
+          puts "Exiting"
+        elsif choice.between?(1,Meal.categories.size)
+          puts "Searching for #{Meal.categories[choice-1]} meals"
+          list_meals(@interface.meals_by_category(Meal.categories[choice-1]))
+        else
+          choice = nil
+          puts "Invalid input, please try again"
+        end
+      end
+      puts "Press enter to return to menu" if choice != 0 # development
+      gets.chomp if choice != 0  # development
     end
 
     def get_meals_by_main_ingrediant
-      puts "Show me a random meal"
+      puts "Show meal by main ingrediant"
       sleep 1
-    end
-
-    def get_random_meal()
-
     end
 
     def list_meals(meal_arr)
@@ -126,16 +147,24 @@ module MealSelector
       if meal_arr.count == 1
         show_meal(meal_arr[0])
       else
-        puts "show list of meal"
+        start = 0
+        end_index = meal_arr.count <= 10 ? meal_arr.size - 1 : 10
+        puts 'Select Meal'
+        meal_arr.each do |meal|
+          puts "=> #{meal.name}: #{meal.type}"
+        end
+        puts "show list of meal (#{meal_arr.size})"
+        sleep 5
       end
     end
 
     def show_meal(meal)
+      # Shows a meal
       raise "meal is not a MealSelector::Meal instead #{meal.class}" unless meal.is_a?(Meal)
       raise "meal is not frozen" unless meal.frozen?
       clear()
       puts "Name: #{meal.name.capitalize}"
-      puts "Category: #{meal.category.capitalize}"
+      puts "Category: #{meal.category.capitalize}" 
       puts "Type: #{meal.type.capitalize}"
       puts 'Ingredient:'
       meal.ingredient.each do
@@ -151,8 +180,6 @@ module MealSelector
       # TODO: add meal to favorite
 
     end
-
-
 
     def clear()
       # Marks old Input and clears screen

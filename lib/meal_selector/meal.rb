@@ -21,9 +21,9 @@ module MealSelector
       existing_meal = @@all.find { |meal| meal.id == @id }
       return existing_meal if !existing_meal.nil?
       @name = meal_hash.delete('strMeal')
-      @category = meal_hash.delete('strCategory')
+      @category = meal_hash.delete('strCategory') || "Undefined"
       @instructions = meal_hash.delete('strInstructions')
-      @type = meal_hash.delete('strTags')
+      @type = meal_hash.delete('strTags') || "Undefined"
       @youtube = meal_hash.delete('strYoutube')
       setup_ingredients(meal_hash)
 
@@ -81,6 +81,7 @@ module MealSelector
     end
 
     def self.categories
+      raise 'categories not set' if @@categories.empty?
       @@categories
     end
   
