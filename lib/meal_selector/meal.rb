@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module MealSelector
-  # Data container for meals (raised Exceptions must be handled by caller)
+  # Data container for a fully looked up Meal (raised Exceptions must be handled by caller)
   class Meal
     @@all = []
     @@favorite = []
@@ -81,7 +81,6 @@ module MealSelector
     end
 
     def self.categories
-      raise 'categories not set' if @@categories.empty?
       @@categories
     end
   

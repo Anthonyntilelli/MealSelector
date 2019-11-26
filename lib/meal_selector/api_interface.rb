@@ -2,7 +2,7 @@
 
 module MealSelector
   # Communicates with Mealdb database for meal data
-  # Network issue will raised exceptions which are expected to handle by caller
+  # Network issue can raise exceptions, which are expected to handle by caller
   class ApiInterface
     API_ENDPOINT = 'https://www.themealdb.com/api/json'
 
@@ -10,21 +10,17 @@ module MealSelector
       # Sets API key and Version
       # Set api_key and check its correct format
       raise 'Key must a string' unless key.is_a?(String)
+      raise 'Version must be 1 or 2' unless version == '1' || version == '2'
 
-      begin
-        Integer(key)
-      rescue ArgumentError
-        raise 'API must be a number'
-      end
       warn('Warning: API key `1` is only for development') if key == '1'
-      raise 'version must be integer above or equal to one' \
-      unless version.is_a?(Integer) && version.to_i >= 1
+
       @version = version
       @key = key
     end
 
     def search_meal_name(name)
       # Search meal by name
+      # return array of Meals
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/search.php?s=Arrabiata
       raise 'Name is not a string' unless name.is_a?(String)
       name = name.gsub(" ","%20")
@@ -40,6 +36,7 @@ module MealSelector
 
     def meal_by_id(id)
       # Lookup full meal details by id
+      # return array of Meals
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/lookup.php?i=52772
 
       raise "id is not an Integer (#{id.class})" unless id.is_a?(Integer)
@@ -58,6 +55,7 @@ module MealSelector
 
     def random_meal
       # Lookup a single random meal
+      # returns meal
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/random.php
       raw_content = nil
       connection = open("#{api_url}random.php").each do |json|
@@ -83,6 +81,7 @@ module MealSelector
 
     def search_by_ingredient(primary_ingredient)
       # Search by primary main ingredient
+      # Returns meal_list
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?i=chicken_breast
       raise 'primary_ingredient is not a string' unless primary_ingredient.is_a?(String)
       primary_ingredient = primary_ingredient.gsub(" ","%20")
@@ -93,14 +92,12 @@ module MealSelector
       end
       connection.close
       json_meal = JSON.parse(raw_content)
-      # partial reasults are returned by this api call.
-      json_meal['meals'].collect do | hash_meal |
-        meal_by_id(hash_meal['idMeal'].to_i)
-      end
+      MealList.new(json_meal)
     end
 
     def meals_by_category(category)
       # Filter by Category
+      # Returns meal_list
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?c=Seafood
       populate_categories if Meal.categories.empty? || Meal.categories.nil?
       raise "#{category} is not a valid category" unless Meal.categories.include?(category)
@@ -111,10 +108,7 @@ module MealSelector
       end
       connection.close
       json_meal = JSON.parse(raw_content)
-      # partial reasults are returned by this api call.
-      json_meal['meals'].collect do | hash_meal |
-        meal_by_id(hash_meal['idMeal'].to_i)
-      end
+      MealList.new(json_meal)
     end
 
     def save(path = "#{Dir.home}/.Mealdbkey")
@@ -130,7 +124,7 @@ module MealSelector
       raise 'Incorrect format for Meal Api Key file' unless raw_data.count == 4
       raise "Error finding version info (#{raw_data[0]})" unless raw_data[0] == 'version:'
       raise "Error finding key info (#{raw_data[2]})" unless raw_data[2] == 'key:'
-      ApiInterface.new(raw_data[3], raw_data[1].to_i)
+      ApiInterface.new(raw_data[3], raw_data[1])
     end
 
     private
