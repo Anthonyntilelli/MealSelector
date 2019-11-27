@@ -1,48 +1,73 @@
 # frozen_string_literal: true
 
 module MealSelector
-  # Data container for meals (raised Exceptions must be handled by caller)
+  # Data container for a fully looked up Meal (raised Exceptions must be handled by caller)
   class Meal
-    @@all = []
-    @@favorite = []
+    @@favorite = {}
     @@categories = []
     attr_reader :id, :name, :category, :instructions, \
-                :type, :youtube, :ingredient
+                :type, :ingredient, :youtube
 
-    def initialize(meal_hash)
+    def initialize(meal)
       # Converts hash into 1 meal object
       # If meal object already exist it will return exiting object
-      raise 'meal_hash must be a hash' unless meal_hash.is_a?(Hash)
+      meal_hash = meal.dup
+      raise 'meal must be a hash' unless meal_hash.is_a?(Hash)
 
-      raise 'meal_hash is not a hash for a meal' \
+      raise 'meal is not a hash for a meal' \
             unless meal_hash['idMeal'].is_a?(String)
 
+      meal_hash
       @id = meal_hash.delete('idMeal')
-      existing_meal = @@all.find { |meal| meal.id == @id }
-      return existing_meal if !existing_meal.nil?
       @name = meal_hash.delete('strMeal')
       @category = meal_hash.delete('strCategory') || "Undefined"
       @instructions = meal_hash.delete('strInstructions')
       @type = meal_hash.delete('strTags') || "Undefined"
       @youtube = meal_hash.delete('strYoutube')
-      setup_ingredients(meal_hash)
+      if meal_hash["sync_ingredients"].nil?
+        setup_ingredients(meal_hash)
+      else
+        # load from saved meal
+        raise "sync_ingredients is not a hash" unless meal_hash["sync_ingredients"].is_a?(Hash)
+        @ingredient = meal_hash.delete('sync_ingredients')
+      end
 
       # Prevent incomplete Meal
       raise "Error setting up instructions" if @instructions.empty? || @instructions.nil?
       raise "Error setting up ingredients" if @ingredient.empty? || @ingredient.nil?
-      save_and_freeze
+      freeze
     end
 
-    def self.find_by_id(id)
-      # Returns meal by id if exists
-      # Return nil if it does not exist
-      raise 'id must be a string' unless id.is_a?(String)
+    def add_to_favorites
+      if @@favorite[self.id].nil?
+        @@favorite[self.id] = self
+        true
+      else
+        false
+      end
+    end
 
-      @@all.find { |meal| meal.id == id }
+    def to_meal_hash
+      # turns object back into a meal hash
+      {
+        'idMeal' => @id,
+        'strMeal' => @name,
+        'strCategory' => @category,
+        'strInstructions' => @instructions,
+        'strTags' => @type,
+        'strYoutube' => @youtube,
+        'sync_ingredients' => @ingredient
+      }
+    end
+
+    # Class Methods
+
+    def self.favorite
+      @@favorite
     end
 
     def self.clear_all
-      @@all.clear
+      @@favorite.clear
       @@categories.clear
     end
 
@@ -50,8 +75,8 @@ module MealSelector
       @@categories.clear
     end
 
-    def self.meal_clear
-      @@all.clear
+    def self.favorite_clear
+      @@favorite.clear
     end
 
     def self.create_from_array(meals_hash)
@@ -76,29 +101,30 @@ module MealSelector
       @@categories = processed_categories
     end
 
-    def self.all
-      @@all
-    end
-
     def self.categories
-      raise 'categories not set' if @@categories.empty?
       @@categories
     end
-  
-    private
 
-    def save_and_freeze
-      # Saves meal to @@all if it does not already exist
-      if Meal.find_by_id(id).nil?
-        @@all << self
-        freeze
-        true
-      else
-        false
-      end
+    def self.save_favorite(path = "#{Dir.home}/favorite_meals.json")
+      # Saves favorites to a file (will overwrite existing file)
+      converted = @@favorite.collect { |id, meal| meal.to_meal_hash }
+      meal_hash = { 'meals' => converted}
+      File.open(path, 'w') { |file| file.write(meal_hash.to_json) }
     end
 
+    def self.load_favorites(path = "#{Dir.home}/favorite_meals.json")
+      # Loads saved favorite meals and adds to favorites
+      raise "File #{path} does not exist!" unless File.exist?(path)
+      raw_data = File.read(path).chomp
+      parsed = JSON.parse(raw_data)
+      meals_arr = create_from_array(parsed)
+      meals_arr.each { |meal|  meal.add_to_favorites }
+    end
+
+    private
+
     def setup_ingredients(left_over_meal_hash)
+      # Assigns 'strIngredient#' and 'strMeasure#' together
       @ingredient = {} # 'strIngredient#' => 'strMeasure#'
       left_over_meal_hash.each do |key, value|
         next if value == '' || value == ' ' || value.nil? # prevent blank entries
