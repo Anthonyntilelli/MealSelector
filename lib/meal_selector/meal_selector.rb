@@ -27,7 +27,7 @@ module MealSelector
           print "Version: "
           version = gets.chomp
           begin
-            @interface = ApiInterface.new(key,version.to_i)
+            @interface = ApiInterface.new(key,version)
             @interface.populate_categories()
           rescue
             puts "Error when setting up key and version, try again."
@@ -39,7 +39,7 @@ module MealSelector
         answer = nil
         until answer
           print "Save API Key and Version [Y/N]? "
-          answer = gets.strip
+          answer = gets.strip.upcase
           if answer != "N" && answer != "Y"
             puts "Invalid input, try again (#{answer})"
             answer = nil
@@ -47,6 +47,7 @@ module MealSelector
         end
           @interface.save() if answer == "Y"
         end
+        Meal.load_favorites()
     end
 
     def menu()
@@ -60,8 +61,10 @@ module MealSelector
         puts "`2` Show meals by a category"
         puts "`3` Show meals by a main ingrediant (not Implimented)"
         puts "`4` Show me a random meal"
-        #TODO puts "5. View favorite meals"
+        puts "`5` View favorite meals" if !Meal.favorites.empty?
+        puts "`6` Clear all favorite meals" if !Meal.favorites.empty?
         puts '`0` Exit program'
+
         input_phase = true
         while !quit && input_phase
           input = begin
@@ -81,10 +84,33 @@ module MealSelector
             input_phase = false
           when 4
             # Showing Random meal
-            list_meals(@interface.random_meal)
+            show_meal(@interface.random_meal)
             input_phase = false
           when 5
-            raise NotImplementedError("View favorite not implimented")
+            if !Meal.favorites.empty?
+              raise NotImplementedError("View favorite not implimented")
+              input_phase = false
+            else
+              puts "No Favorites to view"
+            end
+            sleep 1 # Development
+            input_phase = false
+          when 6
+            if !Meal.favorites.empty?
+              puts "Are you sure?[y/n]"
+              user_confirmation = gets.chomp.downcase
+              if user_confirmation == "y"
+                puts "Clearing favorites"
+                Meal.favorites.clear
+              elsif user_confirmation == "n"
+                puts "aborting clear"
+              else
+                puts "unknown input, assuming no"
+              end
+            else
+              puts "Favorites are already cleared"
+            end
+            sleep 1
             input_phase = false
           when 0
             input_phase = false
@@ -138,24 +164,15 @@ module MealSelector
       sleep 1
     end
 
-    def list_meals(meal_arr)
-      # List meals to front end for selection
-      # If arry only has one meal it will directly show that meal.
-      raise "meals is not an array, instead it is #{meal_arr.class}" unless meal_arr.is_a?(Array)
-      raise 'meals is empry' if meal_arr.empty?
+    def show_full_list(meals)
+      # TODO
+    end
 
-      if meal_arr.count == 1
-        show_meal(meal_arr[0])
-      else
-        start = 0
-        end_index = meal_arr.count <= 10 ? meal_arr.size - 1 : 10
-        puts 'Select Meal'
-        meal_arr.each do |meal|
-          puts "=> #{meal.name}: #{meal.type}"
-        end
-        puts "show list of meal (#{meal_arr.size})"
-        sleep 5
-      end
+    def show_partial_list(meals)
+      # List meals to front end for selection
+      # If array only has one meal it will directly show that meal.
+      raise 'meals is empty' if meals.empty?
+      # TODO
     end
 
     def show_meal(meal)
@@ -163,6 +180,7 @@ module MealSelector
       raise "meal is not a MealSelector::Meal instead #{meal.class}" unless meal.is_a?(Meal)
       raise "meal is not frozen" unless meal.frozen?
       clear()
+      id = meal.id
       puts "Name: #{meal.name.capitalize}"
       puts "Category: #{meal.category.capitalize}" 
       puts "Type: #{meal.type.capitalize}"
@@ -175,10 +193,16 @@ module MealSelector
       puts "#{meal.instructions}"
       puts ''
 
-      puts "Go back press enter"
-      gets.chomp!
-      # TODO: add meal to favorite
-
+      puts "Enter `F` to add to favorites and go back" if Meal.favorites[id].nil?
+      puts "Enter `R` to remove from favorites" if !Meal.favorites[id].nil?
+      puts "Else press `enter` to go back"
+      user_input = gets.chomp!
+      case user_input
+      when "F"
+        meal.add_to_favorites
+      when "R"
+        Meal.favorites.delete(id)
+      end
     end
 
     def clear()

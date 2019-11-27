@@ -52,15 +52,16 @@ module MealSelector
 
     def random_meal
       # Lookup a single random meal
-      # returns meal
+      # returns meal object
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/random.php
       raw_content = nil
       connection = open("#{api_url}random.php").each do |json|
         raw_content = json
       end
       connection.close
-      json_meal = JSON.parse(raw_content)
-      Meal.create_from_array(json_meal)
+      parsed_meal = JSON.parse(raw_content)['meals']
+      raise "Incorrect number of meals returned" if parsed_meal.count != 1
+      Meal.new(parsed_meal[0])
     end
 
     def populate_categories
@@ -78,7 +79,7 @@ module MealSelector
 
     def search_by_ingredient(primary_ingredient)
       # Search by primary main ingredient
-      # Returns meal_list
+      # Returns MealList
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?i=chicken_breast
       raise 'primary_ingredient is not a string' unless primary_ingredient.is_a?(String)
       primary_ingredient = primary_ingredient.gsub(" ","%20")
@@ -94,7 +95,7 @@ module MealSelector
 
     def meals_by_category(category)
       # Filter by Category
-      # Returns meal_list
+      # Returns MealList
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?c=Seafood
       populate_categories if Meal.categories.empty? || Meal.categories.nil?
       raise "#{category} is not a valid category" unless Meal.categories.include?(category)

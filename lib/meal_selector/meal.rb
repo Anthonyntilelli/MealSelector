@@ -3,7 +3,7 @@
 module MealSelector
   # Data container for a fully looked up Meal (raised Exceptions must be handled by caller)
   class Meal
-    @@favorite = {}
+    @@favorites = {}
     @@categories = []
     attr_reader :id, :name, :category, :instructions, \
                 :type, :ingredient, :youtube
@@ -12,12 +12,14 @@ module MealSelector
       # Converts hash into 1 meal object
       # If meal object already exist it will return exiting object
       meal_hash = meal.dup
-      raise 'meal must be a hash' unless meal_hash.is_a?(Hash)
+      raise "meal must be a hash, instead #{meal_hash.class}" unless meal_hash.is_a?(Hash)
 
       raise 'meal is not a hash for a meal' \
             unless meal_hash['idMeal'].is_a?(String)
 
-      meal_hash
+      raise 'Incorrect hash for meal object' \
+            unless meal_hash['meals'].nil?
+
       @id = meal_hash.delete('idMeal')
       @name = meal_hash.delete('strMeal')
       @category = meal_hash.delete('strCategory') || "Undefined"
@@ -39,8 +41,8 @@ module MealSelector
     end
 
     def add_to_favorites
-      if @@favorite[self.id].nil?
-        @@favorite[self.id] = self
+      if @@favorites[self.id].nil?
+        @@favorites[self.id] = self
         true
       else
         false
@@ -62,12 +64,12 @@ module MealSelector
 
     # Class Methods
 
-    def self.favorite
-      @@favorite
+    def self.favorites
+      @@favorites
     end
 
     def self.clear_all
-      @@favorite.clear
+      @@favorites.clear
       @@categories.clear
     end
 
@@ -75,8 +77,8 @@ module MealSelector
       @@categories.clear
     end
 
-    def self.favorite_clear
-      @@favorite.clear
+    def self.favorites_clear
+      @@favorites.clear
     end
 
     def self.create_from_array(meals_hash)
@@ -107,18 +109,19 @@ module MealSelector
 
     def self.save_favorite(path = "#{Dir.home}/favorite_meals.json")
       # Saves favorites to a file (will overwrite existing file)
-      converted = @@favorite.collect { |id, meal| meal.to_meal_hash }
-      meal_hash = { 'meals' => converted}
+      converted = @@favorites.collect { |id, meal| meal.to_meal_hash }
+      meal_hash = { 'meals' => converted }
       File.open(path, 'w') { |file| file.write(meal_hash.to_json) }
     end
 
     def self.load_favorites(path = "#{Dir.home}/favorite_meals.json")
       # Loads saved favorite meals and adds to favorites
-      raise "File #{path} does not exist!" unless File.exist?(path)
+      return false unless File.exist?(path)
       raw_data = File.read(path).chomp
       parsed = JSON.parse(raw_data)
       meals_arr = create_from_array(parsed)
       meals_arr.each { |meal|  meal.add_to_favorites }
+      true
     end
 
     private

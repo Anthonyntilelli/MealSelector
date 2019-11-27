@@ -25,5 +25,9 @@ module MealSelector
       @List.count
     end
 
+    def empty?
+      @List.empty?
+    end
+
   end
 end
