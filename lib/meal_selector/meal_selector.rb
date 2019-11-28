@@ -4,6 +4,7 @@ require 'open-uri'
 require 'json'
 require_relative "meal.rb"
 require_relative "api_interface.rb"
+require_relative "meal_list.rb"
 
 module MealSelector
   class MealSelector
@@ -60,7 +61,7 @@ module MealSelector
         puts "Thank you for using Meal Selector."
         puts "Please select a number from the options below:"
         puts "`1` Search for meal by name (not Implimented)"
-        puts "`2` Show meals by a category"
+        puts "`2` Show meals by a category (In progress)"
         puts "`3` Show meals by a main ingrediant (not Implimented)"
         puts "`4` Show me a random meal"
         puts "`5` View favorite meals" if !Meal.favorites.empty?
@@ -162,16 +163,17 @@ module MealSelector
         if choice == 0
           puts "Exiting"
         elsif choice.between?(1,Meal.categories.size)
-          puts "Searching for #{Meal.categories[choice-1]} meals"
-          list_meals(@interface.meals_by_category(Meal.categories[choice-1]))
+          puts "Searching for #{Meal.categories[choice-1]} meals" # TODO: REMOVE ME
+          # TODO: show_partial_list
+          # list_meals(@interface.meals_by_category(Meal.categories[choice-1]))
         else
           choice = nil
           puts "Invalid input, please try again"
         end
       end
-      puts "Press enter to return to menu" if choice != 0 # development
-      print "$: "
-      gets.chomp if choice != 0  # development
+      puts "Press enter to return to menu" if choice != 0 # TODO: REMOVE ME
+      print "$: " # TODO: REMOVE ME
+      gets.chomp if choice != 0  # TODO: REMOVE ME
     end
 
     def get_meals_by_main_ingrediant
