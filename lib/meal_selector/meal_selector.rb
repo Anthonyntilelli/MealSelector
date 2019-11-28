@@ -26,6 +26,7 @@ module MealSelector
           exit if key == 'QQ'
           print "Version: "
           version = gets.chomp
+          exit if version == 'QQ'
           begin
             @interface = ApiInterface.new(key,version)
             @interface.populate_categories()
@@ -48,6 +49,7 @@ module MealSelector
           @interface.save() if answer == "Y"
         end
         Meal.load_favorites()
+        Meal.favorites_init
     end
 
     def menu()
@@ -63,14 +65,17 @@ module MealSelector
         puts "`4` Show me a random meal"
         puts "`5` View favorite meals" if !Meal.favorites.empty?
         puts "`6` Clear all favorite meals" if !Meal.favorites.empty?
-        puts '`0` Exit program'
+        puts '`0` Exit program' if !Meal.favorites_changed?
+        puts '`0` Exit program (don`t save favorite change)' if Meal.favorites_changed?
+        puts '`-1` Exit program  and save favorites' if Meal.favorites_changed?
 
         input_phase = true
         while !quit && input_phase
+          print "$: "
           input = begin
             Integer(gets.chomp)
           rescue ArgumentError
-            -1
+            -99
           end
           case input
           when 1
@@ -88,8 +93,7 @@ module MealSelector
             input_phase = false
           when 5
             if !Meal.favorites.empty?
-              raise NotImplementedError("View favorite not implimented")
-              input_phase = false
+              show_full_list(Meal.favorites)
             else
               puts "No Favorites to view"
             end
@@ -97,7 +101,7 @@ module MealSelector
             input_phase = false
           when 6
             if !Meal.favorites.empty?
-              puts "Are you sure?[y/n]"
+              print "Are you sure?[y/n]: "
               user_confirmation = gets.chomp.downcase
               if user_confirmation == "y"
                 puts "Clearing favorites"
@@ -115,6 +119,15 @@ module MealSelector
           when 0
             input_phase = false
             quit = true
+          when -1
+            if Meal.favorites_changed?
+              puts "Saving favorite changes"
+              Meal.save_favorite
+              input_phase = false
+              quit = true
+            else
+              puts "Invalid selection, please try again"
+            end
           else
             puts "Invalid selection, please try again"
           end
@@ -133,18 +146,19 @@ module MealSelector
       choice = nil
       clear()
       puts "Select a meal category:"
-      Meal.categories.each_index do |index| 
+      Meal.categories.each_index do |index|
         puts "=> `#{index+1}` #{Meal.categories[index]}"
       end
       puts '=> `0` Return to menu'
 
       while !choice
+        print "$: "
         choice = begin
           Integer(gets.chomp)
         rescue ArgumentError
           -1
         end
-        
+
         if choice == 0
           puts "Exiting"
         elsif choice.between?(1,Meal.categories.size)
@@ -156,6 +170,7 @@ module MealSelector
         end
       end
       puts "Press enter to return to menu" if choice != 0 # development
+      print "$: "
       gets.chomp if choice != 0  # development
     end
 
@@ -165,7 +180,37 @@ module MealSelector
     end
 
     def show_full_list(meals)
-      # TODO
+      # List full meals from hash
+      raise "Meals is not a hash" unless meals.is_a?(Hash)
+
+      count = 0
+      round = {}
+      clear()
+      puts "Select a meal below:"
+      meals.collect do |key, value|
+        count += 1
+        round[count] = key
+        puts "`#{count}` #{value.name}"
+      end
+      puts '`0` to return to menu'
+
+      input = nil
+      while !input
+        print "$: "
+        input = begin
+          Integer(gets.chomp)
+        rescue ArgumentError
+          false
+        end
+        return if input == 0
+        if !input || round[input].nil? || input.negative?
+          puts "Invalid input, try again"
+          input = false
+        end
+      end
+      sleep 1
+
+      show_meal(meals[round[input]])
     end
 
     def show_partial_list(meals)
@@ -179,10 +224,11 @@ module MealSelector
       # Shows a meal
       raise "meal is not a MealSelector::Meal instead #{meal.class}" unless meal.is_a?(Meal)
       raise "meal is not frozen" unless meal.frozen?
+
       clear()
       id = meal.id
       puts "Name: #{meal.name.capitalize}"
-      puts "Category: #{meal.category.capitalize}" 
+      puts "Category: #{meal.category.capitalize}"
       puts "Type: #{meal.type.capitalize}"
       puts 'Ingredient:'
       meal.ingredient.each do
@@ -195,13 +241,29 @@ module MealSelector
 
       puts "Enter `F` to add to favorites and go back" if Meal.favorites[id].nil?
       puts "Enter `R` to remove from favorites" if !Meal.favorites[id].nil?
-      puts "Else press `enter` to go back"
-      user_input = gets.chomp!
+      puts "Press `enter` to go back (no change to favorite)"
+      print "$: "
+      user_input = gets.chomp!.upcase
       case user_input
       when "F"
-        meal.add_to_favorites
+        if Meal.favorites[id].nil?
+          puts "Adding to favorites"
+          meal.add_to_favorites
+        else
+          puts "Meal already in favorites, skipping"
+        end
       when "R"
-        Meal.favorites.delete(id)
+        if !Meal.favorites[id].nil?
+          puts "Removing Favorite"
+          Meal.favorites.delete(id)
+        else
+          puts "Meal not in favorites, skipping"
+          sleep 0.75
+        end
+      when ""
+        puts "Going Back"
+      else
+        puts "Unknown Input, going back"
       end
     end
 

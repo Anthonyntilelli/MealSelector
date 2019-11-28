@@ -4,7 +4,10 @@ module MealSelector
   # Data container for a fully looked up Meal (raised Exceptions must be handled by caller)
   class Meal
     @@favorites = {}
+    @@favorite_state = nil
     @@categories = []
+
+
     attr_reader :id, :name, :category, :instructions, \
                 :type, :ingredient, :youtube
 
@@ -77,8 +80,29 @@ module MealSelector
       @@categories.clear
     end
 
+    def self.favorites_init
+      # sets the favoate  state to watch
+      @@favorite_state = @@favorites.keys.sort
+    end
+
+    def self.favorites_changed?
+      # returns true if favorites change since
+      # favorite_init was called
+
+      @@favorite_state != @@favorites.keys.sort
+    end
+
     def self.favorites_clear
+      #clears favorites
+
+      #favorites are change if not originally empty
+      @@favorite_change = true if !@@favorites.empty?
       @@favorites.clear
+    end
+
+    def self.favorite_change
+      ## return is favorites have changes
+      @@favorite_change
     end
 
     def self.create_from_array(meals_hash)
