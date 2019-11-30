@@ -46,8 +46,7 @@ module MealSelector
         raw_content = json
       end
       connection.close
-      json_meal = JSON.parse(raw_content)
-      Meal.create_from_array(json_meal)
+      create_meal(raw_content)
     end
 
     def random_meal
@@ -59,9 +58,7 @@ module MealSelector
         raw_content = json
       end
       connection.close
-      parsed_meal = JSON.parse(raw_content)['meals']
-      raise "Incorrect number of meals returned" if parsed_meal.count != 1
-      Meal.new(parsed_meal[0])
+      create_meal(raw_content)
     end
 
     def populate_categories
@@ -129,6 +126,14 @@ module MealSelector
 
     def api_url
       API_ENDPOINT + "/v#{@version}/#{@key}/"
+    end
+
+    def create_meal(raw_meal_content)
+      # Parse Meal return and create meal object
+      parsed_meal = JSON.parse(raw_meal_content)['meals']
+      return nil if parsed_meal.nil?
+      raise "Incorrect number of meals returned" if parsed_meal.count != 1
+      Meal.new(parsed_meal[0])
     end
 
   end

@@ -61,7 +61,7 @@ module MealSelector
         puts "Thank you for using Meal Selector."
         puts "Please select a number from the options below:"
         puts "`1` Search for meal by name (not Implimented)"
-        puts "`2` Show meals by a category (In progress)"
+        puts "`2` Show meals by a category"
         puts "`3` Show meals by a main ingrediant (not Implimented)"
         puts "`4` Show me a random meal"
         puts "`5` View favorite meals" if !Meal.favorites.empty?
@@ -94,7 +94,7 @@ module MealSelector
             input_phase = false
           when 5
             if !Meal.favorites.empty?
-              show_full_list(Meal.favorites)
+              show_meal_list(Meal.favorites)
             else
               puts "No Favorites to view"
             end
@@ -163,17 +163,13 @@ module MealSelector
         if choice == 0
           puts "Exiting"
         elsif choice.between?(1,Meal.categories.size)
-          puts "Searching for #{Meal.categories[choice-1]} meals" # TODO: REMOVE ME
-          # TODO: show_partial_list
-          # list_meals(@interface.meals_by_category(Meal.categories[choice-1]))
+          puts "Searching for #{Meal.categories[choice-1]} meals"
+          show_meal_list(@interface.meals_by_category(Meal.categories[choice-1]))
         else
           choice = nil
           puts "Invalid input, please try again"
         end
       end
-      puts "Press enter to return to menu" if choice != 0 # TODO: REMOVE ME
-      print "$: " # TODO: REMOVE ME
-      gets.chomp if choice != 0  # TODO: REMOVE ME
     end
 
     def get_meals_by_main_ingrediant
@@ -181,20 +177,28 @@ module MealSelector
       sleep 1
     end
 
-    def show_full_list(meals)
-      # List full meals from hash
-      raise "Meals is not a hash" unless meals.is_a?(Hash)
+    def show_meal_list(meals)
+      # List meals
+      raise 'meals is empty' if meals.empty?
+      raise "Meals does not respond to `[]`" unless meals.respond_to?("[]")
 
       count = 0
-      round = {}
+      round = {} # record the keys per round {round => id }
       clear()
       puts "Select a meal below:"
       meals.collect do |key, value|
         count += 1
         round[count] = key
-        puts "`#{count}` #{value.name}"
+        # raise "Name not defined for key: #{key}"
+        if meals.respond_to?("partial?")
+          # Partial meal => value is name
+          puts "`#{count}` #{value}"
+        else
+          # Meal
+          puts "`#{count}` #{value.name}"
+        end
       end
-      puts '`0` to return to menu'
+      puts '`0` Return to menu'
 
       input = nil
       while !input
@@ -210,16 +214,15 @@ module MealSelector
           input = false
         end
       end
-      sleep 1
-
-      show_meal(meals[round[input]])
-    end
-
-    def show_partial_list(meals)
-      # List meals to front end for selection
-      # If array only has one meal it will directly show that meal.
-      raise 'meals is empty' if meals.empty?
-      # TODO
+      if meals.respond_to?("partial?")
+        # Partial meal => resolve id to get full meal
+        meal_object = @interface.meal_by_id(round[input].to_i)
+      else
+        # Meal
+        meal_object = meals[round[input]]
+      end
+      raise "Meal not found by id #{id}" if meal_object.nil?
+      show_meal(meal_object)
     end
 
     def show_meal(meal)
