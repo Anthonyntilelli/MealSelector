@@ -8,37 +8,38 @@ require_relative "meal_list.rb"
 
 module MealSelector
   class MealSelector
-    def initialize(load)
-      raise "Invalid load value, should be true or false" if !!load != load
-      @interface = nil
+    def initialize
+      # Trys to load key from file and ask if file does not exist/bad format
+      begin
+        @interface = ApiInterface.load()
+        @interface.populate_categories()
+        loaded_by_file = true
+      rescue
+        @interface = nil
+      end
 
-      if load
+      # => No key file found
+      until @interface
+        puts "To start using meal selector, please input below info:"
+        print 'API KEY ("QQ" will kill the program): '
+        key = gets.chomp
+        exit if key == 'QQ'
+        print "Version: "
+        version = gets.chomp
+        exit if version == 'QQ'
         begin
-          @interface = ApiInterface.load()
+          @interface = ApiInterface.new(key,version)
           @interface.populate_categories()
+          loaded_by_file = false
         rescue
-          abort("Failure Loading file")
+          puts "Error when setting up key and version, try again."
+          key = nil
+          version = nil
+          @interface = nil
         end
-      else
-        until @interface
-          puts "To start using meal selector, please input below info:"
-          print 'API KEY ("QQ" will kill the program): '
-          key = gets.chomp
-          exit if key == 'QQ'
-          print "Version: "
-          version = gets.chomp
-          exit if version == 'QQ'
-          begin
-            @interface = ApiInterface.new(key,version)
-            @interface.populate_categories()
-          rescue
-            puts "Error when setting up key and version, try again."
-            key = nil
-            version = nil
-            @interface = nil
-          end
-        end
-        answer = nil
+      end
+      answer = nil
+      if !loaded_by_file
         until answer
           print "Save API Key and Version [Y/N]? "
           answer = gets.strip.upcase
@@ -47,10 +48,12 @@ module MealSelector
             answer = nil
           end
         end
-          @interface.save() if answer == "Y"
-        end
-        Meal.load_favorites()
-        Meal.favorites_init
+        @interface.save() if answer == "Y"
+      end
+      # => No key file found
+
+      Meal.load_favorites()
+      Meal.favorites_init
     end
 
     def menu()
@@ -62,7 +65,7 @@ module MealSelector
         puts "Please select a number from the options below:"
         puts "`1` Search for meal by name"
         puts "`2` Show meals by a category"
-        puts "`3` Show meals by a main ingrediant (not Implimented)"
+        puts "`3` Show meals by a main ingrediant"
         puts "`4` Show me a random meal"
         puts "`5` View favorite meals" if !Meal.favorites.empty?
         puts "`6` Clear all favorite meals" if !Meal.favorites.empty?
@@ -72,12 +75,7 @@ module MealSelector
 
         input_phase = true
         while !quit && input_phase
-          print "$: "
-          input = begin
-            Integer(gets.chomp)
-          rescue ArgumentError
-            -99
-          end
+          input = user_input_int(-1,6)
           case input
           when 1
             search_meal_by_name()
@@ -118,6 +116,7 @@ module MealSelector
             sleep 1
             input_phase = false
           when 0
+            puts "Quiting"
             input_phase = false
             quit = true
           when -1
@@ -127,7 +126,7 @@ module MealSelector
               input_phase = false
               quit = true
             else
-              puts "Invalid selection, please try again"
+              puts "No changes to favorites to save"
             end
           else
             puts "Invalid selection, please try again"
@@ -191,8 +190,26 @@ module MealSelector
     end
 
     def get_meals_by_main_ingrediant
-      puts "Show meal by main ingrediant"
-      sleep 1
+      # Search for meal by main ingrediant
+      clear()
+      searching = true
+      puts "Enter an ingrediant to search by:"
+      puts "Enter `0` to return to menu"
+      while searching
+        print "$: "
+        user_input = gets.chomp
+        if user_input == '0'
+          searching = false
+        else
+          results = @interface.search_by_ingredient(user_input)
+          if results.nil?
+            puts "Cannot find any meals for that ingredient, try Again"
+          else
+            searching = false
+            show_meal_list(results)
+          end
+        end
+      end
     end
 
     def show_meal_list(meals)
@@ -290,10 +307,27 @@ module MealSelector
       end
     end
 
-    def clear()
+    def clear
       # Marks old Input and clears screen
       puts "=== old console Output ==="
       puts `clear`
     end
+
+    def user_input_int(range_start,range_end)
+      user_input = "INVALID"
+      while user_input == "INVALID"
+        print "$: "
+        begin
+          input = Integer(gets.chomp)
+          raise ArgumentError.new("Not in range") unless input.between?(range_start,range_end)
+          user_input = input
+        rescue ArgumentError
+          user_input = "INVALID"
+          puts "Invalid Input, please try again  (#{range_start} <=> #{range_end})"
+        end
+      end
+      user_input
+    end
+
   end
 end
