@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module MealSelector
-  # Data container for a fully looked up Meal (raised Exceptions must be handled by caller)
+  # Data container for a fully looked up Meal
+  # Raised Exceptions must be handled by caller
   class Meal
     @@favorites = {}
     @@favorite_state = nil
@@ -106,13 +107,18 @@ module MealSelector
     end
 
     def self.create_from_array(meals_hash)
-      # Create new meals from array of meals and returns array of Meal objects
+      # Create new meals from array of meals and returns hash of Meal objects
       raise 'meals_hash must me a hash' unless meals_hash.is_a?(Hash)
 
       raise 'meals_hash must be an array of meals' \
             unless meals_hash['meals'].is_a?(Array)
 
-      meals_hash['meals'].collect { |meal| Meal.new(meal) }
+      processed = {}
+      meals_hash['meals'].each do |meal|
+        meal_obj = Meal.new(meal)
+        processed[meal_obj.id] = meal_obj
+      end
+      return processed
     end
 
     def self.set_categories(categories_arr)
@@ -144,7 +150,7 @@ module MealSelector
       raw_data = File.read(path).chomp
       parsed = JSON.parse(raw_data)
       meals_arr = create_from_array(parsed)
-      meals_arr.each { |meal|  meal.add_to_favorites }
+      meals_arr.each { |_key,meal|  meal.add_to_favorites }
       true
     end
 

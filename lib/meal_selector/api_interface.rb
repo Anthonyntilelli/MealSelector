@@ -30,8 +30,7 @@ module MealSelector
         raw_content = json
       end
       connection.close
-      json_meal = JSON.parse(raw_content)
-      Meal.create_from_array(json_meal)
+      creates_many_meals(raw_content)
     end
 
     def meal_by_id(id)
@@ -46,7 +45,7 @@ module MealSelector
         raw_content = json
       end
       connection.close
-      create_meal(raw_content)
+      create_a_meal(raw_content)
     end
 
     def random_meal
@@ -58,7 +57,7 @@ module MealSelector
         raw_content = json
       end
       connection.close
-      create_meal(raw_content)
+      create_a_meal(raw_content)
     end
 
     def populate_categories
@@ -128,13 +127,23 @@ module MealSelector
       API_ENDPOINT + "/v#{@version}/#{@key}/"
     end
 
-    def create_meal(raw_meal_content)
+    def create_a_meal(raw_meal_content)
       # Parse Meal return and create meal object
+      # returns nil if no meal exists
       parsed_meal = JSON.parse(raw_meal_content)['meals']
       return nil if parsed_meal.nil?
+      parsed_meal.compact!
+      return nil if parsed_meal.empty?
       raise "Incorrect number of meals returned" if parsed_meal.count != 1
       Meal.new(parsed_meal[0])
     end
 
+    def creates_many_meals(raw_meal_content)
+      json_meal = JSON.parse(raw_meal_content)
+      raise "Not a hash returned" unless json_meal.is_a?(Hash)
+      json_meal.compact!
+      return nil if json_meal.empty?
+      Meal.create_from_array(json_meal)
+    end
   end
 end

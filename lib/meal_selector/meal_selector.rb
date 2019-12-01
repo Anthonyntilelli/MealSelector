@@ -60,7 +60,7 @@ module MealSelector
         clear()
         puts "Thank you for using Meal Selector."
         puts "Please select a number from the options below:"
-        puts "`1` Search for meal by name (not Implimented)"
+        puts "`1` Search for meal by name"
         puts "`2` Show meals by a category"
         puts "`3` Show meals by a main ingrediant (not Implimented)"
         puts "`4` Show me a random meal"
@@ -97,8 +97,8 @@ module MealSelector
               show_meal_list(Meal.favorites)
             else
               puts "No Favorites to view"
+              sleep 0.75
             end
-            sleep 1 # Development
             input_phase = false
           when 6
             if !Meal.favorites.empty?
@@ -139,8 +139,26 @@ module MealSelector
     private
 
     def search_meal_by_name
-      puts "Search for meal by name"
-      sleep 1
+      # Search for meal by entered name
+      clear()
+      searching = true
+      puts "Enter a meal name to search:"
+      puts "Enter `0` to return to menu"
+      while searching
+        print "$: "
+        user_input = gets.chomp
+        if user_input == '0'
+          searching = false
+        else
+          results = @interface.search_meal_name(user_input)
+          if results.nil?
+            puts "Cannot find any meals by that name, try Again"
+          else
+            searching = false
+            show_meal_list(results)
+          end
+        end
+      end
     end
 
     def get_meals_by_categories
