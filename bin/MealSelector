@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require_relative '../config/enviorment.rb'
+main = MealSelector::MealSelector.new
+main.menu
