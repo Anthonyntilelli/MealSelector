@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require 'open-uri'
-require 'json'
-require_relative "meal.rb"
-require_relative "api_interface.rb"
-require_relative "meal_list.rb"
-
 module MealSelector
   class MealSelector
     def initialize
