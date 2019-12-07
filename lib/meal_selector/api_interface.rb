@@ -10,7 +10,7 @@ module MealSelector
       # Sets API key and Version
       # Set api_key and check its correct format
       raise 'Key must a string' unless key.is_a?(String)
-      raise 'Version must be 1 or 2' unless version == '1' || version == '2'
+      raise 'Version must be 1 or 2' unless %w[1 2].include?(version)
 
       warn('Warning: API key `1` is only for development') if key == '1'
 
@@ -23,8 +23,8 @@ module MealSelector
       # return array of Meals
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/search.php?s=Arrabiata
       raise 'Name is not a string' unless name.is_a?(String)
-      name = name.gsub(" ","%20")
 
+      name = name.gsub(' ', '%20')
       raw_content = nil
       connection = open("#{api_url}search.php?s=#{name}").each do |json|
         raw_content = json
@@ -78,8 +78,8 @@ module MealSelector
       # Returns MealList
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?i=chicken_breast
       raise 'primary_ingredient is not a string' unless primary_ingredient.is_a?(String)
-      primary_ingredient = primary_ingredient.gsub(" ","%20")
 
+      primary_ingredient = primary_ingredient.gsub(' ', '%20')
       raw_content = nil
       connection = open("#{api_url}filter.php?i=#{primary_ingredient}").each do |json|
         raw_content = json
@@ -107,17 +107,20 @@ module MealSelector
 
     def save(path = "#{Dir.home}/.Mealdbkey")
       # Saves ApiInterface to a file (will overwrite existing file)
-      File.open(path, 'w') { |file| file.write("version: #{@version}\nkey: #{@key}") }
+      File.open(path, 'w') \
+      { |file| file.write("version: #{@version}\nkey: #{@key}") }
     end
 
     def self.load(path = "#{Dir.home}/.Mealdbkey")
       # Creates ApiInterface from a file
       raise "File #{path} does not exist!" unless File.exist?(path)
+
       raw_data = File.read(path).chomp
       raw_data = raw_data.split
       raise 'Incorrect format for Meal Api Key file' unless raw_data.count == 4
       raise "Error finding version info (#{raw_data[0]})" unless raw_data[0] == 'version:'
       raise "Error finding key info (#{raw_data[2]})" unless raw_data[2] == 'key:'
+
       ApiInterface.new(raw_data[3], raw_data[1])
     end
 
@@ -132,17 +135,22 @@ module MealSelector
       # returns nil if no meal exists
       parsed_meal = JSON.parse(raw_meal_content)['meals']
       return nil if parsed_meal.nil?
+
       parsed_meal.compact!
       return nil if parsed_meal.empty?
-      raise "Incorrect number of meals returned" if parsed_meal.count != 1
+
+      raise 'Incorrect number of meals returned' if parsed_meal.count != 1
+
       Meal.new(parsed_meal[0])
     end
 
     def creates_many_meals(raw_meal_content)
       json_meal = JSON.parse(raw_meal_content)
-      raise "Not a hash returned" unless json_meal.is_a?(Hash)
+      raise 'Not a hash returned' unless json_meal.is_a?(Hash)
+
       json_meal.compact!
       return nil if json_meal.empty?
+
       Meal.create_from_array(json_meal)
     end
   end
