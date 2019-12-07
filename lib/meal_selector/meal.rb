@@ -8,7 +8,6 @@ module MealSelector
     @@favorite_state = nil
     @@categories = []
 
-
     attr_reader :id, :name, :category, :instructions, \
                 :type, :ingredient, :youtube
 
@@ -26,27 +25,28 @@ module MealSelector
 
       @id = meal_hash.delete('idMeal')
       @name = meal_hash.delete('strMeal')
-      @category = meal_hash.delete('strCategory') || "Undefined"
+      @category = meal_hash.delete('strCategory') || 'Undefined'
       @instructions = meal_hash.delete('strInstructions')
-      @type = meal_hash.delete('strTags') || "Undefined"
+      @type = meal_hash.delete('strTags') || 'Undefined'
       @youtube = meal_hash.delete('strYoutube')
-      if meal_hash["sync_ingredients"].nil?
+      if meal_hash['sync_ingredients'].nil?
         setup_ingredients(meal_hash)
       else
         # load from saved meal
-        raise "sync_ingredients is not a hash" unless meal_hash["sync_ingredients"].is_a?(Hash)
+        raise 'sync_ingredients is not a hash' unless meal_hash['sync_ingredients'].is_a?(Hash)
+
         @ingredient = meal_hash.delete('sync_ingredients')
       end
 
       # Prevent incomplete Meal
-      raise "Error setting up instructions" if @instructions.empty? || @instructions.nil?
-      raise "Error setting up ingredients" if @ingredient.empty? || @ingredient.nil?
+      raise 'Error setting up instructions' if @instructions.empty? || @instructions.nil?
+      raise 'Error setting up ingredients' if @ingredient.empty? || @ingredient.nil?
       freeze
     end
 
     def add_to_favorites
-      if @@favorites[self.id].nil?
-        @@favorites[self.id] = self
+      if @@favorites[@id].nil?
+        @@favorites[@id] = self
         true
       else
         false
@@ -94,9 +94,8 @@ module MealSelector
     end
 
     def self.favorites_clear
-      #clears favorites
-
-      #favorites are change if not originally empty
+      # clears favorites
+      # favorites are change if not originally empty
       @@favorite_change = true if !@@favorites.empty?
       @@favorites.clear
     end
@@ -118,18 +117,18 @@ module MealSelector
         meal_obj = Meal.new(meal)
         processed[meal_obj.id] = meal_obj
       end
-      return processed
+      processed
     end
 
     def self.set_categories(categories_arr)
       # sets a list of meal categories by Api_interface
       raise 'categories_arr must be an Array' unless categories_arr.is_a?(Array)
-      raise 'categories must not be empty' if  categories_arr.empty?
+      raise 'categories must not be empty' if categories_arr.empty?
 
       main_count = categories_arr.count
-      processed_categories = categories_arr.collect { |cat| cat["strCategory"] }.compact
+      processed_categories = categories_arr.collect { |cat| cat['strCategory'] }.compact
       # check for nil categories
-      raise "Count Error in categories" if main_count != processed_categories.count
+      raise 'Count Error in categories' if main_count != processed_categories.count
       @@categories = processed_categories
     end
 
@@ -139,7 +138,7 @@ module MealSelector
 
     def self.save_favorite(path = "#{Dir.home}/favorite_meals.json")
       # Saves favorites to a file (will overwrite existing file)
-      converted = @@favorites.collect { |id, meal| meal.to_meal_hash }
+      converted = @@favorites.collect { |_id, meal| meal.to_meal_hash }
       meal_hash = { 'meals' => converted }
       File.open(path, 'w') { |file| file.write(meal_hash.to_json) }
     end
@@ -147,10 +146,11 @@ module MealSelector
     def self.load_favorites(path = "#{Dir.home}/favorite_meals.json")
       # Loads saved favorite meals and adds to favorites
       return false unless File.exist?(path)
+
       raw_data = File.read(path).chomp
       parsed = JSON.parse(raw_data)
       meals_arr = create_from_array(parsed)
-      meals_arr.each { |_key,meal|  meal.add_to_favorites }
+      meals_arr.each { |_key, meal| meal.add_to_favorites }
       true
     end
 
