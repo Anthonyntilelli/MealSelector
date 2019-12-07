@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module MealSelector
-  # Communicates with Mealdb database for meal data
+  # Communicates with Mealdb database and return meal hash
   # Network issue can raise exceptions, which are expected to handle by caller
   class ApiInterface
     API_ENDPOINT = 'https://www.themealdb.com/api/json'
@@ -13,100 +13,73 @@ module MealSelector
       raise 'Version must be 1 or 2' unless %w[1 2].include?(version)
 
       warn('Warning: API key `1` is only for development') if key == '1'
-
       @version = version
       @key = key
+      @api_url = API_ENDPOINT + "/v#{@version}/#{@key}/"
     end
 
-    def search_meal_name(name)
-      # Search meal by name
-      # return array of Meals
+    def search_meals_name(name)
+      # Search meal(s) by name
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/search.php?s=Arrabiata
-      raise 'Name is not a string' unless name.is_a?(String)
+      raise "Name is not a string (#{name.class})" unless name.is_a?(String)
 
-      name = name.gsub(' ', '%20')
-      raw_content = nil
-      connection = open("#{api_url}search.php?s=#{name}").each do |json|
-        raw_content = json
-      end
-      connection.close
-      creates_many_meals(raw_content)
+      url_end = "search.php?s=#{name.gsub(' ', '%20')}"
+      content = api_call(url_end)
+      validate(content)
+      content
     end
 
     def meal_by_id(id)
       # Lookup full meal details by id
-      # return array of Meals
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/lookup.php?i=52772
-
       raise "id is not an Integer (#{id.class})" unless id.is_a?(Integer)
 
-      raw_content = nil
-      connection = open("#{api_url}lookup.php?i=#{id}").each do |json|
-        raw_content = json
-      end
-      connection.close
-      create_a_meal(raw_content)
+      content = api_call("lookup.php?i=#{id}")
+      validate(content)
+      content
     end
 
     def random_meal
       # Lookup a single random meal
-      # returns meal object
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/random.php
-      raw_content = nil
-      connection = open("#{api_url}random.php").each do |json|
-        raw_content = json
-      end
-      connection.close
-      create_a_meal(raw_content)
+      content = api_call('random.php')
+      validate(content)
+      content
     end
 
-    def populate_categories
-      # Gets List of Categories for meals and set them.
-      # List all Categories
+    def meal_categories
+      # Gets List of Categories for meals
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/list.php?c=list
-
-      raw_categories = nil
-      connection = open("#{api_url}list.php?c=list").each do |json|
-        raw_categories = json
-      end
-      connection.close
-      Meal.set_categories(JSON.parse(raw_categories)['meals'])
+      content = api_call('list.php?c=list')
+      validate(content)
+      content
     end
 
     def search_by_ingredient(primary_ingredient)
       # Search by primary main ingredient
-      # Returns MealList
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?i=chicken_breast
       raise 'primary_ingredient is not a string' unless primary_ingredient.is_a?(String)
 
-      primary_ingredient = primary_ingredient.gsub(' ', '%20')
-      raw_content = nil
-      connection = open("#{api_url}filter.php?i=#{primary_ingredient}").each do |json|
-        raw_content = json
-      end
-      connection.close
-      json_meal = JSON.parse(raw_content)
-      MealList.new(json_meal)
+      url_end = "filter.php?i=#{primary_ingredient.gsub(' ', '%20')}"
+      content = api_call(url_end)
+      validate(content)
+      content
     end
 
     def meals_by_category(category)
       # Filter by Category
-      # Returns MealList
       # EXAMPLE: https://www.themealdb.com/api/json/v1/1/filter.php?c=Seafood
-      populate_categories if Meal.categories.empty? || Meal.categories.nil?
-      raise "#{category} is not a valid category" unless Meal.categories.include?(category)
+      raise "category is not a string (#{category.class})" unless category.is_a?(String)
 
-      raw_content = nil
-      connection = open("#{api_url}filter.php?c=#{category}").each do |json|
-        raw_content = json
-      end
-      connection.close
-      json_meal = JSON.parse(raw_content)
-      MealList.new(json_meal)
+      content = api_call("filter.php?c=#{category}")
+      validate(content)
+      content
     end
 
     def save(path = "#{Dir.home}/.Mealdbkey")
       # Saves ApiInterface to a file (will overwrite existing file)
+      raise 'cannot save debug key' if @key == '1'
+
       File.open(path, 'w') \
       { |file| file.write("version: #{@version}\nkey: #{@key}") }
     end
@@ -121,37 +94,36 @@ module MealSelector
       raise "Error finding version info (#{raw_data[0]})" unless raw_data[0] == 'version:'
       raise "Error finding key info (#{raw_data[2]})" unless raw_data[2] == 'key:'
 
-      ApiInterface.new(raw_data[3], raw_data[1])
+      new(raw_data[3], raw_data[1])
     end
 
     private
 
-    def api_url
-      API_ENDPOINT + "/v#{@version}/#{@key}/"
+    def api_call(endpoint)
+      # makes api call and returns parsed data
+      # on error will retry 3 times
+      raise 'endpoint must be string' unless endpoint.is_a?(String)
+
+      url = @api_url.to_s + endpoint.to_s
+      tries = 3
+      begin
+        tries -= 1
+        res = HTTParty.get(url, timeout: 30, format: :plain)
+      rescue Net::OpenTimeout, SocketError
+        raise unless tries >= 0
+
+        sleep rand(1..3)
+        retry
+      end
+      raise "Error when calling `#{url}` responce:`#{res.response}`" unless res.success?
+
+      JSON.parse(res, symbolize_names: true)
     end
 
-    def create_a_meal(raw_meal_content)
-      # Parse Meal return and create meal object
-      # returns nil if no meal exists
-      parsed_meal = JSON.parse(raw_meal_content)['meals']
-      return nil if parsed_meal.nil?
-
-      parsed_meal.compact!
-      return nil if parsed_meal.empty?
-
-      raise 'Incorrect number of meals returned' if parsed_meal.count != 1
-
-      Meal.new(parsed_meal[0])
-    end
-
-    def creates_many_meals(raw_meal_content)
-      json_meal = JSON.parse(raw_meal_content)
-      raise 'Not a hash returned' unless json_meal.is_a?(Hash)
-
-      json_meal.compact!
-      return nil if json_meal.empty?
-
-      Meal.create_from_array(json_meal)
+    def validate(data)
+      # validate data in expected format and raise exception if not
+      raise "responce is not in hash (#{data})" unless data.is_a?(Hash)
+      raise 'responce missing `:meals` entry' unless data.keys.include?(:meals)
     end
   end
 end
