@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'open-uri'
 require 'json'
 require_relative "../lib/meal_selector/version"
