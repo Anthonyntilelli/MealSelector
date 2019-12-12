@@ -20,6 +20,7 @@ full_meal.to_meal_hash
 multiple_full = File.read('spec/files/full_meals_23_example.json')
 multiple_full = JSON.parse(multiple_full, symbolize_names: true)
 MealSelector::Meal.create_from_array(multiple_full)
+MealSelector::Meal.create_from_array( {meals:nil} )
 
 # Multiple Partial
 multiple_part = File.read('spec/files/partial_meals_six_example.json')
@@ -29,3 +30,6 @@ MealSelector::Meal.create_from_array(multiple_part)
 # check ==
 full_meal == partial_meal # false
 full_meal == full_meal.dup # true
+
+# MEALS::EMPTY_MEALS
+MealSelector::Meal::EMPTY_MEALS # {:meals=>nil}

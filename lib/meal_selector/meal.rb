@@ -4,9 +4,10 @@ module MealSelector
   # Data container for a fully looked up Meal
   # Raised Exceptions must be handled by caller
   class Meal
+    EMPTY_MEALS = { meals: nil }.freeze
+
     attr_reader :id, :name, :category, :instructions, \
                 :type, :ingredient, :youtube
-
     def initialize(meal_hash)
       # Converts hash into 1 meal object
       pre_meal = init_check(meal_hash)
@@ -54,6 +55,7 @@ module MealSelector
     def self.create_from_array(meals_hash)
       # Create new meals from array of meals and returns hash of Meal objects
       raise 'meals_hash must me a hash' unless meals_hash.is_a?(Hash)
+      return {} if meals_hash == EMPTY_MEALS
       raise 'meals_hash must be an array of meals' unless meals_hash[:meals].is_a?(Array)
 
       processed = {}
@@ -95,14 +97,15 @@ module MealSelector
         # Saved meal
         raise ':sync_ingredients is not a hash' unless full_hash[:sync_ingredients].is_a?(Hash)
 
-        @ingredient = full_meall_hash.delete(:sync_ingredients)
+        @ingredient = full_hash.delete(:sync_ingredients)
       end
     end
 
     def init_check(meal_hash)
       # checks meal hash and returns meal
-      raise 'Incorrect hash for meal object' if meal_hash[:meals].nil?
       raise 'meal_hash must be a hash' unless meal_hash.is_a?(Hash)
+      raise 'Empty Meal provided' if meal_hash == EMPTY_MEALS
+      raise 'Incorrect hash for meal object' unless meal_hash[:meals].is_a?(Array)
       raise 'More then one meal provided' unless meal_hash[:meals].count == 1
 
       meal_hash[:meals][0].dup
