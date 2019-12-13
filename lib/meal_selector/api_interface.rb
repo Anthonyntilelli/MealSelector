@@ -5,6 +5,7 @@ module MealSelector
   # Network issue can raise exceptions, which are expected to handle by caller
   class ApiInterface
     API_ENDPOINT = 'https://www.themealdb.com/api/json'
+    DEFAULT_Key_PATH = "#{Dir.home}/.Mealdbkey"
 
     def initialize(key, version)
       # Sets API key and Version
@@ -76,7 +77,7 @@ module MealSelector
       content
     end
 
-    def save(path = "#{Dir.home}/.Mealdbkey")
+    def save(path = DEFAULT_Key_PATH)
       # Saves ApiInterface to a file (will overwrite existing file)
       raise 'cannot save debug key' if @key == '1'
 
@@ -84,7 +85,7 @@ module MealSelector
       { |file| file.write("version: #{@version}\nkey: #{@key}") }
     end
 
-    def self.load(path = "#{Dir.home}/.Mealdbkey")
+    def self.load(path = DEFAULT_Key_PATH)
       # Creates ApiInterface from a file
       raise "File #{path} does not exist!" unless File.exist?(path)
 
@@ -108,10 +109,11 @@ module MealSelector
       tries = 3
       begin
         tries -= 1
-        res = HTTParty.get(url, timeout: 30, format: :plain)
+        res = HTTParty.get(url, timeout: 25, format: :plain)
       rescue Net::OpenTimeout, SocketError
         raise unless tries >= 0
 
+        puts "Failed to reach meal server, Retrying...(#{tries + 1})"
         sleep rand(1..3)
         retry
       end

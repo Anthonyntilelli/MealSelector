@@ -6,23 +6,23 @@ module MealSelector
     DEFAULT_FAVORITES_PATH = "#{Dir.home}/favorite_meals.json"
 
     attr_reader :favorites, :categories
-    def initialize(save_api, version, key = nil)
-      # Sets up api key, favorites and categories
-      # version and key checked by ApiInterface
-      raise 'Save_api must be a bool' unless save_api.is_a?(TrueClass) || save_api.is_a?(FalseClass)
+    def initialize(api)
+      # Sets up favorites and categories via api
+      # key at `nil` will cause backend to look for file
+      raise 'api must be a api_interface' unless api.is_a?(ApiInterface)
 
       @favorites = {}
       @categories = {}
       @favorite_state = nil
-      @api =  if key.nil? # load from file
-                ApiInterface.load
-              else
-                ApiInterface.new(key, version)
-              end
+      @api = api
       @categories = populate_categories(@api.meal_categories)
       load_favorites
       favorites_init
-      @interface.save if save_api
+    end
+
+    def save_api_info
+      #saves keys and version to default file
+      @interface.save
     end
 
     # Favorites
@@ -88,14 +88,19 @@ module MealSelector
     end
 
     def find_meal_by_ingredient(primary_ingredient)
-      meals_hsh = @api.search_by_ingredient(primary_ingredient)
-
+      # Outputs a meals based on ingredient
+      meals_hsh = @api.search_by_ingredient(primary_ingredient.downcase)
       Meal.create_from_array(meals_hsh)
     end
 
     def find_random_meal
       # Provides a random meal object
       Meal.new(@api.random_meal)
+    end
+
+    def find_meal_by_id(id)
+      # returns meal by id
+      Meal.new(@api.meal_by_id(id))
     end
 
     private

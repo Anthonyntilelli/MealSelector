@@ -60,6 +60,8 @@ module MealSelector
 
       processed = {}
       meals_hash[:meals].each do |meal|
+        next if meal[:strMeal].match?(/test/)
+
         meal_obj = Meal.new(meals: [meal])
         processed[meal_obj.id.to_sym] = meal_obj
       end
@@ -99,6 +101,7 @@ module MealSelector
 
         @ingredient = full_hash.delete(:sync_ingredients)
       end
+      @ingredient.freeze
     end
 
     def init_check(meal_hash)

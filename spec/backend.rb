@@ -2,7 +2,7 @@
 require_relative 'config/environment'
 
 # Initial
-backend = MealSelector::Backend.new(false,'1','1')
+backend = MealSelector::Backend.new(MealSelector::ApiInterface.load)
 backend.categories
 backend.favorites
 
@@ -33,6 +33,9 @@ c = backend.find_meal_by_ingredient("chicken breast")
 d = backend.find_meal_by_ingredient("chicken breast")
 backend.find_meal_by_ingredient("sdkjasdklaj sdlkasjdlka")
 c == d
+
+# find_meal_by_id
+backend.find_meal_by_id(52772)
 
 # load/save
 backend.save_favorites
