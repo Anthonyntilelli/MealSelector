@@ -5,7 +5,7 @@ module MealSelector
   # Network issue can raise exceptions, which are expected to handle by caller
   class ApiInterface
     API_ENDPOINT = 'https://www.themealdb.com/api/json'
-    DEFAULT_Key_PATH = "#{Dir.home}/.Mealdbkey"
+    DEFAULT_KEY_PATH = "#{Dir.home}/.Mealdbkey"
 
     def initialize(key, version)
       # Sets API key and Version
@@ -77,15 +77,20 @@ module MealSelector
       content
     end
 
-    def save(path = DEFAULT_Key_PATH)
+    def can_save?
+      # returns if key can save
+      @key != '1'
+    end
+
+    def save(path = DEFAULT_KEY_PATH)
       # Saves ApiInterface to a file (will overwrite existing file)
-      raise 'cannot save debug key' if @key == '1'
+      raise 'cannot save debug key' unless can_save?
 
       File.open(path, 'w') \
       { |file| file.write("version: #{@version}\nkey: #{@key}") }
     end
 
-    def self.load(path = DEFAULT_Key_PATH)
+    def self.load(path = DEFAULT_KEY_PATH)
       # Creates ApiInterface from a file
       raise "File #{path} does not exist!" unless File.exist?(path)
 

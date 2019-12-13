@@ -21,7 +21,7 @@ module MealSelector
     end
 
     def save_api_info
-      #saves keys and version to default file
+      # saves keys and version to default file
       @interface.save
     end
 
@@ -72,6 +72,8 @@ module MealSelector
       # favorites are change if not originally empty
       @favorites.clear
     end
+
+    # Meal actions
 
     def find_meals_by_name(name)
       # Returns one or more meals by name

@@ -4,37 +4,16 @@ module MealSelector
   # User interface for MealSelector
   class Frontend
     def initialize
-      # Trys to load key from file and ask if file does not exist/bad format
+      # Trys to load key from file
       @last_meal = nil
-      new_interface = nil
       begin
         @backend = Backend.new(ApiInterface.load)
-      rescue
+      rescue RuntimeError
         @backend = nil
       end
-
-      # => No key file found
-      until @backend
-        puts 'To start using Meal Selector, please input below info:'
-        print 'API KEY ("q" will kill the program): '
-        key = gets.chomp
-        exit if key == 'Q' || key == 'q'
-        print 'Version: '
-        version = gets.chomp
-        exit if version == 'Q' || version == 'q'
-        begin
-          new_interface = ApiInterface.new(key, version)
-          @backend = Backend.new(new_interface)
-        rescue
-          puts 'Error when setting up key and version, try again.'
-          puts 'Please ensure correct key is in use'
-          puts ''
-          @backend = nil
-          new_interface = nil
-        end
-      end
-      save_dialog(new_interface) if new_interface
-      # => No key file found
+      # Asks for api/key if file does not exist/bad format
+      new_interface = init_kv_dialog
+      init_save_dialog(new_interface) if new_interface&.can_save?
     end
 
     def menu
@@ -67,44 +46,7 @@ module MealSelector
         end
 
         input = user_input(4, *allowed_array)
-        case input
-        when '1'
-          search_meal_by_name
-        when '2'
-          meals_by_categories
-        when '3'
-          meals_by_main_ingrediant
-        when '4'
-          # Showing Random meal
-          show_meal(@backend.find_random_meal, true)
-        when 'l'
-          # Show last meal
-          show_meal(@last_meal, true)
-        when 'f'
-          # show favorites
-          show_meal_list(@backend.favorites, true)
-        when 'c'
-          print 'Are you sure?[y/n]: '
-          user_confirmation = gets.chomp.downcase
-          if user_confirmation == 'y'
-            puts 'Clearing favorites'
-            @backend.favorites.clear
-          elsif user_confirmation == 'n'
-            puts 'aborting clear'
-          else
-            puts 'unknown input, assuming no'
-          end
-          sleep 1
-        when 'quit'
-          puts 'Quiting'
-          quit = true
-        when 'save' || 'w'
-          puts 'Saving favorite changes and exiting'
-          @backend.save_favorite
-          quit = true
-        else
-          raise "Invalid selection in case (#{input})"
-        end
+        quit = menu_dispatcher(input)
         sleep 0.5 # delay clearing screen
       end
     end
@@ -117,8 +59,36 @@ module MealSelector
       puts `clear`
     end
 
-    def save_dialog(api)
+    def init_kv_dialog
+      # Get key and version from user
+      # sets @backend
+      # return  new_interface
+
+      while @backend.nil?
+        puts 'To start using Meal Selector, please input below info:'
+        print 'API KEY ("q" will kill the program): '
+        key = gets.chomp.downcase
+        exit if key == 'q'
+        print 'Version: '
+        version = gets.chomp.downcase
+        exit if version == 'q'
+        begin
+          new_interface = ApiInterface.new(key, version)
+          @backend = Backend.new(new_interface)
+        rescue RuntimeError
+          puts 'Error when setting up key and version, try again.'
+          puts 'Please ensure correct key is in use'
+          @backend = nil
+          new_interface = nil
+        end
+      end
+      new_interface
+    end
+
+    def init_save_dialog(api)
       # Ask user if they want to save api and version info
+      return if api.nil?
+
       answer = nil
       until answer
         print 'Save API Key and Version [Y/N]? '
@@ -133,7 +103,7 @@ module MealSelector
 
     def user_input(list_size, *chars)
       # prompts  user input and check if allowed input
-      # Assume starts with 1 (0 or negative are invalid)
+      # Assume starts with 1 (negative are invalid)
       # set list_size to 0 to not accept numbers
       # '' in *chars will allow for just enter
       # user_input is returned as downsized string
@@ -144,8 +114,10 @@ module MealSelector
         print '$: '
         input = gets.chomp.downcase
         return input if chars.include?(input)
+
         begin
           raise ArgumentError.new('Not in range') unless Integer(input).between?(1, list_size)
+
           user_input = input
         rescue ArgumentError
           user_input = :not_set
@@ -153,6 +125,53 @@ module MealSelector
         end
       end
       user_input
+    end
+
+    def favorite_clear_dialog
+      # Ask user if they want to clear favorites
+      print 'Are you sure?[y/n] '
+      user_confirmation = user_input(0, 'y', 'n')
+      if user_confirmation == 'y'
+        puts 'Clearing favorites'
+        @backend.favorites.clear
+      elsif user_confirmation == 'n'
+        puts 'aborting clear'
+      end
+    end
+
+    def menu_dispatcher(input)
+      # Runs endusers selection
+      # returns quit
+      quit = false
+      case input
+      when '1'
+        search_meal_by_name
+      when '2'
+        meals_by_categories
+      when '3'
+        meals_by_main_ingrediant
+      when '4'
+        # Showing Random meal
+        show_meal(@backend.find_random_meal, true)
+      when 'l'
+        # Show last meal
+        show_meal(@last_meal, true)
+      when 'f'
+        # show favorites
+        show_meal_list(@backend.favorites, true)
+      when 'c'
+        favorite_clear_dialog
+      when 'quit'
+        puts 'Quiting'
+        quit = true
+      when 'save'
+        puts 'Saving favorite changes and exiting'
+        @backend.save_favorites
+        quit = true
+      else
+        raise "Invalid selection in case (#{input})"
+      end
+      quit
     end
 
     def show_meal(meal, menu_only)
@@ -169,8 +188,7 @@ module MealSelector
       puts "Category: #{meal.category.capitalize}"
       puts "Type: #{meal.type.capitalize}"
       puts 'Ingredient:'
-      meal.ingredient.each do
-        |item, amount|
+      meal.ingredient.each do |item, amount|
         puts "=> #{item}: #{amount}"
       end
       puts 'Instructions:'
@@ -199,11 +217,11 @@ module MealSelector
       end
       puts 'Enter `m` to go menu'
       input = user_input(0, *allowed_input)
-      if input == 'f' || input == 'fm'
+      if %w[f fm].include?(input)
         puts 'Adding to favorites'
         @backend.add_to_favorites(meal)
         input == 'f' ? (return true) : (return false)
-      elsif input == 'r' || input == 'rm'
+      elsif %w[r rm].include?(input)
         puts 'Removing favorite'
         @backend.favorites.delete(id)
         input == 'r' ? (return true) : (return false)
@@ -231,7 +249,7 @@ module MealSelector
         clear
         puts 'Select a meal below:'
         # Output meal name
-        meals.collect do |key, meal|
+        meals.each do |key, meal|
           count += 1
           round[count.to_s] = key
           puts "`#{count}` #{meal.name}"
