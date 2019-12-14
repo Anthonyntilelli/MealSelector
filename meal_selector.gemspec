@@ -43,5 +43,4 @@ Gem::Specification.new do |spec|
 
   # Runtime
   spec.add_runtime_dependency 'httparty', '~> 0.17.1'
-  spec.add_runtime_dependency 'colorize', '~> 0.8.1'
 end

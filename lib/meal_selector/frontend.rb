@@ -3,17 +3,9 @@
 module MealSelector
   # User interface for MealSelector
   class Frontend
-    def initialize
-      # Trys to load key from file
+    def initialize(backend)
       @last_meal = nil
-      begin
-        @backend = Backend.new(ApiInterface.load)
-      rescue RuntimeError
-        @backend = nil
-      end
-      # Asks for api/key if file does not exist/bad format
-      new_interface = init_kv_dialog
-      init_save_dialog(new_interface) if new_interface&.can_save?
+      @backend = backend
     end
 
     def menu
@@ -57,48 +49,6 @@ module MealSelector
       # Marks old Input and clears screen
       puts '=== old console Output ==='
       puts `clear`
-    end
-
-    def init_kv_dialog
-      # Get key and version from user
-      # sets @backend
-      # return  new_interface
-
-      while @backend.nil?
-        puts 'To start using Meal Selector, please input below info:'
-        print 'API KEY ("q" will kill the program): '
-        key = gets.chomp.downcase
-        exit if key == 'q'
-        print 'Version: '
-        version = gets.chomp.downcase
-        exit if version == 'q'
-        begin
-          new_interface = ApiInterface.new(key, version)
-          @backend = Backend.new(new_interface)
-        rescue RuntimeError
-          puts 'Error when setting up key and version, try again.'
-          puts 'Please ensure correct key is in use'
-          @backend = nil
-          new_interface = nil
-        end
-      end
-      new_interface
-    end
-
-    def init_save_dialog(api)
-      # Ask user if they want to save api and version info
-      return if api.nil?
-
-      answer = nil
-      until answer
-        print 'Save API Key and Version [Y/N]? '
-        answer = gets.strip.upcase
-        if answer != 'N' && answer != 'Y'
-          puts "Invalid input, try again (#{answer})"
-          answer = nil
-        end
-      end
-      api.save if answer == 'Y'
     end
 
     def user_input(list_size, *chars)

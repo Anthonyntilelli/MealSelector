@@ -20,9 +20,18 @@ module MealSelector
       favorites_init
     end
 
+    def api_can_save?
+      # Can save api
+      @api.can_save?
+    end
+
     def save_api_info
       # saves keys and version to default file
-      @interface.save
+      if api_can_save?
+        @api.save
+        return true
+      end
+      false
     end
 
     # Favorites
