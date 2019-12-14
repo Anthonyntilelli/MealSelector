@@ -1,6 +1,8 @@
-source "https://rubygems.org"
+# frozen_string_literal: true
 
-git_source(:github) {|repo_name| "https://github.com/Anthonyntilelli/MealSelector" }
+source 'https://rubygems.org'
+
+git_source(:github) { |_repo_name| 'https://github.com/Anthonyntilelli/MealSelector' }
 
 # Specify your gem's dependencies in meal_selector.gemspec
 gemspec
