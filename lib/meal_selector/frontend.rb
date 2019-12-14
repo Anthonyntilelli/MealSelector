@@ -237,7 +237,7 @@ module MealSelector
         puts 'Enter `m` to return to menu'
         print '$: '
         input = gets.chomp.downcase
-        next if nput == ''
+        next if input == ''
         return if input == 'm'
 
         results = @backend.find_meal_by_ingredient(input)
