@@ -20,8 +20,37 @@ module MealSelector
     end
 
     def menu
-      # calls front end's menu
-      @frontend.menu
+      quit = false
+      until quit
+        allowed_array = ['quit']
+        Frontend.clear
+        puts 'Thank you for using Meal Selector.'
+        puts 'Please select a number from the options below:'
+        puts '`1` Search for meal by name'
+        puts '`2` Show meals by a category'
+        puts '`3` Search meals by a main ingrediant'
+        puts '`4` Show a random meal'
+        if @frontend.last_meal
+          puts "`l` Show `#{@frontend.last_meal.name}` again"
+          allowed_array << 'l'
+        end
+        unless @frontend.backend.favorites.empty?
+          puts '`f` View favorite meals'
+          puts '`c` Clear all favorite meals'
+          allowed_array << 'f'
+          allowed_array << 'c'
+        end
+        if @frontend.backend.favorites_changed?
+          puts '`save` Save favorites and exit'
+          puts '`quit` Exit program without saving favorites'
+          allowed_array << 'save'
+        else
+          puts '`quit` Exit program'
+        end
+        input = Frontend.user_input(4, *allowed_array)
+        quit =  @frontend.menu_dispatcher(input)
+        sleep 0.5 # delay clearing screen
+      end
     end
 
     private

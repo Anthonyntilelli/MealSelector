@@ -3,90 +3,11 @@
 module MealSelector
   # User interface for MealSelector
   class Frontend
+    attr_accessor :backend, :last_meal
+
     def initialize(backend)
       @last_meal = nil
       @backend = backend
-    end
-
-    def menu
-      quit = false
-      until quit
-        allowed_array = ['quit']
-        clear
-        puts 'Thank you for using Meal Selector.'
-        puts 'Please select a number from the options below:'
-        puts '`1` Search for meal by name'
-        puts '`2` Show meals by a category'
-        puts '`3` Search meals by a main ingrediant'
-        puts '`4` Show a random meal'
-        if @last_meal
-          puts "`l` Show `#{@last_meal.name}` again"
-          allowed_array << 'l'
-        end
-        unless @backend.favorites.empty?
-          puts '`f` View favorite meals'
-          puts '`c` Clear all favorite meals'
-          allowed_array << 'f'
-          allowed_array << 'c'
-        end
-        if @backend.favorites_changed?
-          puts '`save` Save favorites and exit'
-          puts '`quit` Exit program without saving favorites'
-          allowed_array << 'save'
-        else
-          puts '`quit` Exit program'
-        end
-
-        input = user_input(4, *allowed_array)
-        quit = menu_dispatcher(input)
-        sleep 0.5 # delay clearing screen
-      end
-    end
-
-    private
-
-    def clear
-      # Marks old Input and clears screen
-      puts '=== old console Output ==='
-      puts `clear`
-    end
-
-    def user_input(list_size, *chars)
-      # prompts  user input and check if allowed input
-      # Assume starts with 1 (negative are invalid)
-      # set list_size to 0 to not accept numbers
-      # '' in *chars will allow for just enter
-      # user_input is returned as downsized string
-      raise 'list_size cannot be negative' if list_size.negative?
-
-      user_input = :not_set
-      while user_input == :not_set
-        print '$: '
-        input = gets.chomp.downcase
-        return input if chars.include?(input)
-
-        begin
-          raise ArgumentError.new('Not in range') unless Integer(input).between?(1, list_size)
-
-          user_input = input
-        rescue ArgumentError
-          user_input = :not_set
-          puts 'Invalid Input, please try again'
-        end
-      end
-      user_input
-    end
-
-    def favorite_clear_dialog
-      # Ask user if they want to clear favorites
-      print 'Are you sure?[y/n] '
-      user_confirmation = user_input(0, 'y', 'n')
-      if user_confirmation == 'y'
-        puts 'Clearing favorites'
-        @backend.favorites.clear
-      elsif user_confirmation == 'n'
-        puts 'aborting clear'
-      end
     end
 
     def menu_dispatcher(input)
@@ -124,6 +45,49 @@ module MealSelector
       quit
     end
 
+    def self.clear
+      # Marks old Input and clears screen
+      puts '=== old console Output ==='
+      puts `clear`
+    end
+
+    def self.user_input(list_size, *chars)
+      # prompts  user input and check if allowed input
+      # Assume starts with 1 (negative are invalid)
+      # set list_size to 0 to not accept numbers
+      # '' in *chars will allow for just enter
+      # user_input is returned as downsized string
+      raise 'list_size cannot be negative' if list_size.negative?
+
+      input = nil
+      while input.nil?
+        print '$: '
+        input = gets.chomp.downcase
+        # Allowed char
+        return input if chars.include?(input)
+        # Num in range
+        return input if input.to_i.between?(1, list_size)
+
+        # incorrect input
+        input = nil
+        puts 'Invalid Input, please try again'
+      end
+    end
+
+    private
+
+    def favorite_clear_dialog
+      # Ask user if they want to clear favorites
+      print 'Are you sure?[y/n] '
+      user_confirmation = Frontend.user_input(0, 'y', 'n')
+      if user_confirmation == 'y'
+        puts 'Clearing favorites'
+        @backend.favorites.clear
+      elsif user_confirmation == 'n'
+        puts 'aborting clear'
+      end
+    end
+
     def show_meal(meal, menu_only)
       # Shows a meal
       # menu_only determine if option to go back is allowed
@@ -131,7 +95,7 @@ module MealSelector
       raise "meal is not a MealSelector::Meal, instead #{meal.class}" unless meal.is_a?(Meal)
       raise 'meal is not frozen' unless meal.frozen?
 
-      clear
+      Frontend.clear
       @last_meal = meal
       id = meal.id
       puts "Name: #{meal.name.capitalize}"
@@ -166,7 +130,7 @@ module MealSelector
         allowed_input << 'b'
       end
       puts 'Enter `m` to go menu'
-      input = user_input(0, *allowed_input)
+      input = Frontend.user_input(0, *allowed_input)
       if %w[f fm].include?(input)
         puts 'Adding to favorites'
         @backend.add_to_favorites(meal)
@@ -196,7 +160,7 @@ module MealSelector
         allowed_input = ['m']
         count = 0
         round = {} # record the keys per round {round => id }
-        clear
+        Frontend.clear
         puts 'Select a meal below:'
         # Output meal name
         meals.each do |key, meal|
@@ -210,7 +174,7 @@ module MealSelector
           allowed_input << 'b'
         end
 
-        input = user_input(round.size, *allowed_input)
+        input = Frontend.user_input(round.size, *allowed_input)
         return true if input == 'b'
         return false if input == 'm'
 
@@ -228,15 +192,15 @@ module MealSelector
       # Search for meal by entered name
       repeat = true
       while repeat
-        clear
+        Frontend.clear
         puts 'Enter a meal name to search:'
         puts 'Press `m` to return to menu'
         print '$: '
-        user_input = gets.chomp.downcase
-        next if user_input == ''
-        return if user_input == 'm'
+        input = gets.chomp.downcase
+        next if input == ''
+        return if input == 'm'
 
-        results = @backend.find_meals_by_name(user_input)
+        results = @backend.find_meals_by_name(input)
         if results == {}
           puts 'Cannot find any meals by that name, try Again'
           sleep 0.75
@@ -250,13 +214,13 @@ module MealSelector
       # List categories user can choose from
       repeat = true
       while repeat
-        clear
+        Frontend.clear
         puts 'Select a meal category:'
         @backend.categories.each_index do |index|
           puts "=> `#{index + 1}` #{@backend.categories[index]}"
         end
         puts 'Press `m` Return to menu'
-        input = user_input(@backend.categories.size, 'm')
+        input = Frontend.user_input(@backend.categories.size, 'm')
         return if input == 'm'
 
         category = @backend.categories[input.to_i - 1]
@@ -268,15 +232,15 @@ module MealSelector
       # Search for meal by main ingrediant
       repeat = true
       while repeat
-        clear
+        Frontend.clear
         puts 'Enter an ingrediant to search by:'
         puts 'Enter `m` to return to menu'
         print '$: '
-        user_input = gets.chomp.downcase
-        next if user_input == ''
-        return if user_input == 'm'
+        input = gets.chomp.downcase
+        next if nput == ''
+        return if input == 'm'
 
-        results = @backend.find_meal_by_ingredient(user_input)
+        results = @backend.find_meal_by_ingredient(input)
         if results == {}
           puts 'Cannot find any meals for that ingredient, try Again'
           sleep 0.75
