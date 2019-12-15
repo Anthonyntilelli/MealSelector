@@ -3,4 +3,5 @@
 
 require_relative '../config/environment.rb'
 main = MealSelector::MealSelector.new
+trap("SIGINT") { puts "\nBye"; exit }
 main.menu

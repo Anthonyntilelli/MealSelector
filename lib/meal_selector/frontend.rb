@@ -26,7 +26,7 @@ module MealSelector
       input = nil
       while input.nil?
         print '$: '
-        input = gets.chomp.downcase
+        input = gets&.chomp&.downcase
         # Allowed char
         return input if chars.include?(input)
         # Num in range
