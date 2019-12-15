@@ -5,12 +5,12 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = 'meal_selector'
-  spec.version       = '0.2.0'
+  spec.version       = '0.4.0'
   spec.authors       = ['Anthony Tilelli']
   spec.email         = ['Anthony@Tilelli.me']
 
-  spec.summary       = 'App will search users find meal and suggest meals.'
-  spec.description   = 'HELLO WORLD.'
+  spec.summary       = 'Program help user look for and find meals.'
+  spec.description   = 'Program queries the mealdb to search for meal by varous factors, such as name, ingredient and randomly.'
   spec.homepage      = 'https://github.com/Anthonyntilelli/MealSelector'
   spec.license       = 'MIT'
 
@@ -39,9 +39,9 @@ Gem::Specification.new do |spec|
   # Dev
   spec.add_development_dependency 'bundler', '~> 1.17'
   spec.add_development_dependency 'rake', '~> 10.0'
-  spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_development_dependency 'rubocop', '~> 0.76.0'
 
   # Runtime
   spec.add_runtime_dependency 'httparty', '~> 0.17.1'
+  spec.add_runtime_dependency 'launchy', '>= 2.4.3'
 end
