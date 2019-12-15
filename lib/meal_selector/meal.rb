@@ -4,172 +4,114 @@ module MealSelector
   # Data container for a fully looked up Meal
   # Raised Exceptions must be handled by caller
   class Meal
-    @@favorites = {}
-    @@favorite_state = nil
-    @@categories = []
+    EMPTY_MEALS = { meals: nil }.freeze
 
     attr_reader :id, :name, :category, :instructions, \
                 :type, :ingredient, :youtube
-
-    def initialize(meal)
+    def initialize(meal_hash)
       # Converts hash into 1 meal object
-      # If meal object already exist it will return exiting object
-      meal_hash = meal.dup
-      raise "meal must be a hash, instead #{meal_hash.class}" unless meal_hash.is_a?(Hash)
+      pre_meal = init_check(meal_hash)
+      raise 'meal lacks an id' unless pre_meal[:idMeal].is_a?(String)
+      raise 'meal_hash lacks a name' unless pre_meal[:strMeal].is_a?(String)
 
-      raise 'meal is not a hash for a meal' \
-            unless meal_hash['idMeal'].is_a?(String)
-
-      raise 'Incorrect hash for meal object' \
-            unless meal_hash['meals'].nil?
-
-      @id = meal_hash.delete('idMeal')
-      @name = meal_hash.delete('strMeal')
-      @category = meal_hash.delete('strCategory') || 'Undefined'
-      @instructions = meal_hash.delete('strInstructions')
-      @type = meal_hash.delete('strTags') || 'Undefined'
-      @youtube = meal_hash.delete('strYoutube')
-      if meal_hash['sync_ingredients'].nil?
-        setup_ingredients(meal_hash)
-      else
-        # load from saved meal
-        raise 'sync_ingredients is not a hash' unless meal_hash['sync_ingredients'].is_a?(Hash)
-
-        @ingredient = meal_hash.delete('sync_ingredients')
-      end
-
-      # Prevent incomplete Meal
-      raise 'Error setting up instructions' if @instructions.empty? || @instructions.nil?
-      raise 'Error setting up ingredients' if @ingredient.empty? || @ingredient.nil?
+      @id = pre_meal.delete(:idMeal)
+      @name = pre_meal.delete(:strMeal)
+      @whole_meal = pre_meal.keys.include?(:strInstructions)
+      whole_meal_init(pre_meal) if whole_meal?
       freeze
-    end
-
-    def add_to_favorites
-      if @@favorites[@id].nil?
-        @@favorites[@id] = self
-        true
-      else
-        false
-      end
     end
 
     def to_meal_hash
       # turns object back into a meal hash
-      {
-        'idMeal' => @id,
-        'strMeal' => @name,
-        'strCategory' => @category,
-        'strInstructions' => @instructions,
-        'strTags' => @type,
-        'strYoutube' => @youtube,
-        'sync_ingredients' => @ingredient
-      }
+      if whole_meal?
+        {
+          idMeal: @id,
+          strMeal: @name,
+          strCategory: @category,
+          strInstructions: @instructions,
+          strTags: @type,
+          strYoutube: @youtube,
+          sync_ingredients: @ingredient
+        }
+      else
+        { idMeal: @id, strMeal: @name }
+      end
     end
 
-    # Class Methods
-
-    def self.favorites
-      @@favorites
+    def whole_meal?
+      @whole_meal
     end
 
-    def self.clear_all
-      @@favorites.clear
-      @@categories.clear
-    end
+    def ==(other)
+      # compare meal objects
+      return false unless other.is_a?(Meal)
+      return false if other.whole_meal? != whole_meal?
 
-    def self.categories_clear
-      @@categories.clear
-    end
-
-    def self.favorites_init
-      # sets the favoate  state to watch
-      @@favorite_state = @@favorites.keys.sort
-    end
-
-    def self.favorites_changed?
-      # returns true if favorites change since
-      # favorite_init was called
-
-      @@favorite_state != @@favorites.keys.sort
-    end
-
-    def self.favorites_clear
-      # clears favorites
-      # favorites are change if not originally empty
-      @@favorite_change = true if !@@favorites.empty?
-      @@favorites.clear
-    end
-
-    def self.favorite_change
-      ## return is favorites have changes
-      @@favorite_change
+      a = to_meal_hash
+      b = other.to_meal_hash
+      a == b
     end
 
     def self.create_from_array(meals_hash)
       # Create new meals from array of meals and returns hash of Meal objects
       raise 'meals_hash must me a hash' unless meals_hash.is_a?(Hash)
-
-      raise 'meals_hash must be an array of meals' \
-            unless meals_hash['meals'].is_a?(Array)
+      return {} if meals_hash == EMPTY_MEALS
+      raise 'meals_hash must be an array of meals' unless meals_hash[:meals].is_a?(Array)
 
       processed = {}
-      meals_hash['meals'].each do |meal|
-        meal_obj = Meal.new(meal)
-        processed[meal_obj.id] = meal_obj
+      meals_hash[:meals].each do |meal|
+        next if meal[:strMeal].match?(/test/)
+
+        meal_obj = Meal.new(meals: [meal])
+        processed[meal_obj.id.to_sym] = meal_obj
       end
       processed
-    end
-
-    def self.set_categories(categories_arr)
-      # sets a list of meal categories by Api_interface
-      raise 'categories_arr must be an Array' unless categories_arr.is_a?(Array)
-      raise 'categories must not be empty' if categories_arr.empty?
-
-      main_count = categories_arr.count
-      processed_categories = categories_arr.collect { |cat| cat['strCategory'] }.compact
-      # check for nil categories
-      raise 'Count Error in categories' if main_count != processed_categories.count
-      @@categories = processed_categories
-    end
-
-    def self.categories
-      @@categories
-    end
-
-    def self.save_favorite(path = "#{Dir.home}/favorite_meals.json")
-      # Saves favorites to a file (will overwrite existing file)
-      converted = @@favorites.collect { |_id, meal| meal.to_meal_hash }
-      meal_hash = { 'meals' => converted }
-      File.open(path, 'w') { |file| file.write(meal_hash.to_json) }
-    end
-
-    def self.load_favorites(path = "#{Dir.home}/favorite_meals.json")
-      # Loads saved favorite meals and adds to favorites
-      return false unless File.exist?(path)
-
-      raw_data = File.read(path).chomp
-      parsed = JSON.parse(raw_data)
-      meals_arr = create_from_array(parsed)
-      meals_arr.each { |_key, meal| meal.add_to_favorites }
-      true
     end
 
     private
 
     def setup_ingredients(left_over_meal_hash)
-      # Assigns 'strIngredient#' and 'strMeasure#' together
-      @ingredient = {} # 'strIngredient#' => 'strMeasure#'
+      # Assigns :strIngredient# and :strMeasure# together
+      @ingredient = {}
       left_over_meal_hash.each do |key, value|
         next if value == '' || value == ' ' || value.nil? # prevent blank entries
-        next if key == '' || key == ' ' || key.nil? # prevent blank entries
 
         case key
         when /strIngredient.+/
-          location = key.gsub('strIngredient', '')
-          @ingredient[value] = left_over_meal_hash['strMeasure' + location.to_s]
+          location = key.to_s.gsub('strIngredient', '')
+          measure = 'strMeasure' + location.to_s
+          @ingredient[value] = left_over_meal_hash[measure.to_sym]
         end
       end
-      @ingredient = @ingredient.compact
+      @ingredient.compact!
+    end
+
+    def whole_meal_init(full_hash)
+      # Inits part of meal obj for whole meal
+      @category = full_hash.delete(:strCategory) || 'Undefined'
+      @instructions = full_hash.delete(:strInstructions)
+      @type = full_hash.delete(:strTags) || 'Undefined'
+      @youtube = full_hash.delete(:strYoutube)
+      if full_hash[:sync_ingredients].nil?
+        # load from API meal
+        setup_ingredients(full_hash.compact!)
+      else
+        # Saved meal
+        raise ':sync_ingredients is not a hash' unless full_hash[:sync_ingredients].is_a?(Hash)
+
+        @ingredient = full_hash.delete(:sync_ingredients)
+      end
+      @ingredient.freeze
+    end
+
+    def init_check(meal_hash)
+      # checks meal hash and returns meal
+      raise 'meal_hash must be a hash' unless meal_hash.is_a?(Hash)
+      raise 'Empty Meal provided' if meal_hash == EMPTY_MEALS
+      raise 'Incorrect hash for meal object' unless meal_hash[:meals].is_a?(Array)
+      raise 'More then one meal provided' unless meal_hash[:meals].count == 1
+
+      meal_hash[:meals][0].dup
     end
   end
 end
