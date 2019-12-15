@@ -1,11 +1,17 @@
 Metrics/MethodLength:
-  Max: 25
+  Max: 35
 
 Metrics/LineLength:
   Max: 150
 
+Metrics/ClassLength:
+  Max: 160
+
 Metrics/AbcSize:
   Max: 20
+
+Metrics/CyclomaticComplexity:
+  Max: 15
 
 Style/RaiseArgs:
   EnforcedStyle: compact

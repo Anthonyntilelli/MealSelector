@@ -109,9 +109,14 @@ module MealSelector
       Meal.new(@api.random_meal)
     end
 
-    def find_meal_by_id(id)
-      # returns meal by id
-      Meal.new(@api.meal_by_id(id))
+    def resolve_meal(meal)
+      resolved =  if meal.whole_meal?
+                    meal
+                  else
+                    # returns meal by id
+                    Meal.new(@api.meal_by_id(meal.id.to_i))
+                  end
+      resolved
     end
 
     private

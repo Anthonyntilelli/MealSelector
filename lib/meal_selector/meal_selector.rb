@@ -7,16 +7,16 @@ module MealSelector
       # created api and set up frontend
       # Trys to load key from file
       begin
-        backend = Backend.new(ApiInterface.load)
+        @backend = Backend.new(ApiInterface.load)
       rescue RuntimeError
-        backend = nil
+        @backend = nil
       end
       # Asks for api/key if file does not exist/bad format
-      if backend.nil?
-        backend = init_kv_dialog
-        init_save_dialog(backend) if backend&.api_can_save?
+      if @backend.nil?
+        @backend = init_kv_dialog
+        init_save_dialog(@backend) if @backend&.api_can_save?
       end
-      @frontend = Frontend.new(backend)
+      @frontend = Frontend.new
     end
 
     def menu
@@ -31,7 +31,7 @@ module MealSelector
         puts '`4` Show a random meal'
         allowed_input = meal_second_half
         input = Frontend.user_input(4, *allowed_input)
-        quit =  @frontend.menu_dispatcher(input)
+        quit =  menu_dispatcher(input)
         sleep 0.5 # delay clearing screen
       end
     end
@@ -64,7 +64,7 @@ module MealSelector
 
     def init_save_dialog(backend)
       # Ask user if they want to save api and version info
-      return if backend.nil?
+      return if @backend.nil?
 
       answer = nil
       until answer
@@ -75,7 +75,7 @@ module MealSelector
           answer = nil
         end
       end
-      backend.save_api_info if answer == 'Y'
+      @backend.save_api_info if answer == 'Y'
     end
 
     def meal_second_half
@@ -85,13 +85,13 @@ module MealSelector
         puts "`l` Show `#{@frontend.last_meal.name}` again"
         allowed_array << 'l'
       end
-      unless @frontend.backend.favorites.empty?
+      unless @backend.favorites.empty?
         puts '`f` View favorite meals'
         puts '`c` Clear all favorite meals'
         allowed_array << 'f'
         allowed_array << 'c'
       end
-      if @frontend.backend.favorites_changed?
+      if @backend.favorites_changed?
         puts '`save` Save favorites and exit'
         puts '`quit` Exit program without saving favorites'
         allowed_array << 'save'
@@ -99,6 +99,53 @@ module MealSelector
         puts '`quit` Exit program'
       end
       allowed_array
+    end
+
+    def menu_dispatcher(input)
+      # Runs endusers selection
+      # returns quit
+      quit = false
+      case input
+      when '1'
+        @frontend.search_meal_by_name(@backend)
+      when '2'
+        @frontend.meals_by_categories(@backend)
+      when '3'
+        @frontend.meals_by_main_ingrediant(@backend)
+      when '4'
+        # Showing Random meal
+        @frontend.show_meal(@backend.find_random_meal, true, @backend)
+      when 'l'
+        # Show last meal
+        @frontend.show_meal(@frontend.last_meal, true, @backend)
+      when 'f'
+        # show favorites
+        @frontend.show_meal_list(@backend.favorites, true, @backend)
+      when 'c'
+        favorite_clear_dialog
+      when 'quit'
+        puts 'Quiting'
+        quit = true
+      when 'save'
+        puts 'Saving favorite changes and exiting'
+        @backend.save_favorites
+        quit = true
+      else
+        raise "Invalid selection in case (#{input})"
+      end
+      quit
+    end
+
+    def favorite_clear_dialog
+      # Ask user if they want to clear favorites
+      print 'Are you sure?[y/n] '
+      user_confirmation = Frontend.user_input(0, 'y', 'n')
+      if user_confirmation == 'y'
+        puts 'Clearing favorites'
+        @backend.favorites.clear
+      elsif user_confirmation == 'n'
+        puts 'aborting clear'
+      end
     end
   end
 end
