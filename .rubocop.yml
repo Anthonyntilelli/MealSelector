@@ -13,5 +13,12 @@ Metrics/AbcSize:
 Metrics/CyclomaticComplexity:
   Max: 15
 
+Metrics/AbcSize:
+  Enabled: false
+
+
+Metrics/PerceivedComplexity:
+  Max: 15
+
 Style/RaiseArgs:
   EnforcedStyle: compact

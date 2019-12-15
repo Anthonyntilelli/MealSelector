@@ -28,8 +28,8 @@ multiple_part = JSON.parse(multiple_part, symbolize_names: true)
 MealSelector::Meal.create_from_array(multiple_part)
 
 # check ==
-full_meal == partial_meal # false
-full_meal == full_meal.dup # true
+# full_meal == partial_meal # false
+# full_meal == full_meal.dup # true
 
 # MEALS::EMPTY_MEALS
 MealSelector::Meal::EMPTY_MEALS # {:meals=>nil}

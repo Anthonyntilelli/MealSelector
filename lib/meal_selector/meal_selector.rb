@@ -14,7 +14,7 @@ module MealSelector
       # Asks for api/key if file does not exist/bad format
       if @backend.nil?
         @backend = init_kv_dialog
-        init_save_dialog(@backend) if @backend&.api_can_save?
+        init_save_dialog
       end
       @frontend = Frontend.new
     end
@@ -62,9 +62,10 @@ module MealSelector
       backend
     end
 
-    def init_save_dialog(backend)
+    def init_save_dialog
       # Ask user if they want to save api and version info
       return if @backend.nil?
+      return unless @backend&.api_can_save?
 
       answer = nil
       until answer
