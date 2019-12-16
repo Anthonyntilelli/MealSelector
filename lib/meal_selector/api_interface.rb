@@ -3,6 +3,7 @@
 module MealSelector
   # Communicates with Mealdb database
   # @raise network issue can raise exceptions
+  # @author Anthony Tilelli
   class ApiInterface
     # URL to mealdb
     API_ENDPOINT = 'https://www.themealdb.com/api/json'
@@ -92,7 +93,8 @@ module MealSelector
       content
     end
 
-    # Can key/version be saved
+    # Can key/version be saved?
+    # return [Boolean]
     def can_save?
       @key != '1'
     end
@@ -100,7 +102,7 @@ module MealSelector
     # Saves ApiInterface to a file
     # @param path [string]
     # @raise [RuntimeError] When attempting to safe debug key
-    # @Note will overwrite existing file
+    # @note will overwrite existing file
     def save(path = DEFAULT_KEY_PATH)
       raise 'cannot save debug key' unless can_save?
 

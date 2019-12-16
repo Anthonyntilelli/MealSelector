@@ -70,7 +70,7 @@ module MealSelector
 
     # Create new meals from multiple meals and returns hash of Meal objects
     # @param meals_hash [Hash] contain multiple meals in meals format `{ meals: [meal] }`
-    # @returns [Hash] Meals hashed by id `{id => Meal}`
+    # @return [Hash] Meals hashed by id `{id => Meal}` or `{}` for zero meals
     def self.create_from_array(meals_hash)
       raise 'meals_hash must me a hash' unless meals_hash.is_a?(Hash)
       return {} if meals_hash == EMPTY_MEALS

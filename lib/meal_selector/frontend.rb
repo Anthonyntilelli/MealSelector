@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 module MealSelector
-  # User interface for MealSelector
+  # User interface for MealSelector actions
+  # @author Anthony Tilelli
   class Frontend
     attr_accessor :last_meal
 
@@ -183,16 +184,16 @@ module MealSelector
         allowed_input << 'b'
       end
       if meal.youtube
-        puts 'Enter `y` to open meal video'
-        allowed_input << 'y'
+        puts 'Enter `v` to open meal video'
+        allowed_input << 'v'
       end
       puts 'Enter `m` to go menu'
       choice = Frontend.user_input(0, *allowed_input)
       # Action
-      if choice == 'y'
+      if choice == 'v'
         puts "Launching #{meal.youtube}"
         Launchy.open(meal.youtube)
-        allowed_input.pop # remove y
+        allowed_input.pop # remove v
         puts 'Select another option:'
         choice = Frontend.user_input(0, *allowed_input)
       end
@@ -207,6 +208,8 @@ module MealSelector
       end
       return true if choice == 'b'
       return false if choice == 'm'
+
+      raise "Unknown choice #{choice}"
     end
   end
 end
