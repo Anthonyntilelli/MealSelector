@@ -87,6 +87,7 @@ module MealSelector
     end
 
     private
+
     # Combines :strIngredient# and :strMeasure# together for init
     def setup_ingredients(left_over_meal_hash)
       @ingredient = {}

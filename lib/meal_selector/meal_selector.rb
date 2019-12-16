@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
+# MealSelector
+# @author Anthony Tilelli
 module MealSelector
   # Menu for MealSelector
+  # Call #menu to start program
   class MealSelector
+    # Set up Frontend and Backend
     def initialize
-      # created api and set up frontend
       # Trys to load key from file
       begin
         @backend = Backend.new(ApiInterface.load)
@@ -62,8 +65,8 @@ module MealSelector
       backend
     end
 
+    # Ask user if they want to save api and version info
     def init_save_dialog
-      # Ask user if they want to save api and version info
       return if @backend.nil?
       return unless @backend&.api_can_save?
 
