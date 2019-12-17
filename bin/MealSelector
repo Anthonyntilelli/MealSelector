@@ -2,5 +2,9 @@
 # frozen_string_literal: true
 
 require_relative '../config/environment.rb'
+trap('SIGINT') do
+  puts "\nBye"
+  exit(1)
+end
 main = MealSelector::MealSelector.new
 main.menu

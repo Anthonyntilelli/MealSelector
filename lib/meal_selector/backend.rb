@@ -2,31 +2,38 @@
 
 module MealSelector
   # Management layer between ApiInterface and Meal Object
+  # @raise network issue can raise exceptions
+  # @author Anthony Tilelli
   class Backend
+    # Default location for favorite meals to be saved
     DEFAULT_FAVORITES_PATH = "#{Dir.home}/favorite_meals.json"
 
     attr_reader :favorites, :categories
+
+    # Sets up favorites and categories via api
+    # @param api [ApiInterface]
     def initialize(api)
-      # Sets up favorites and categories via api
-      # key at `nil` will cause backend to look for file
       raise 'api must be a api_interface' unless api.is_a?(ApiInterface)
 
       @favorites = {}
       @categories = {}
-      @favorite_state = nil
+      @favorite_state = :unset
       @api = api
       @categories = populate_categories(@api.meal_categories)
       load_favorites
       favorites_init
     end
 
+    # Can api key/version be saved?
+    # return [Boolean]
     def api_can_save?
-      # Can save api
       @api.can_save?
     end
 
+    # Saves keys and version to default file
+    # @note will overwrite existing file
+    # @return [boolean] If was save to file
     def save_api_info
-      # saves keys and version to default file
       if api_can_save?
         @api.save
         return true
@@ -35,6 +42,9 @@ module MealSelector
     end
 
     # Favorites
+    # Adds meal to favorites
+    # @param meal [Meal]
+    # @return [boolean] If meal was added
     def add_to_favorites(meal)
       raise 'Not a meal' unless meal.is_a?(Meal)
 
@@ -46,15 +56,20 @@ module MealSelector
       end
     end
 
+    # Saves favorites to a file
+    # @note Will overwrite existing file
+    # @return [void]
     def save_favorites(path = DEFAULT_FAVORITES_PATH)
-      # Saves favorites to a file (will overwrite existing file)
       converted = @favorites.collect { |_id, meal| meal.to_meal_hash }
       meal_hash = { meals: converted }
       File.open(path, 'w') { |file| file.write(meal_hash.to_json) }
     end
 
+    # Loads saved favorite meals from path and adds to favorites
+    # @param path [String]
+    # @return [Boolean] If file was loaded
+    # @raise If path is not a file
     def load_favorites(path = DEFAULT_FAVORITES_PATH)
-      # Loads saved favorite meals and adds to favorites
       return false unless File.exist?(path)
       raise "#{path} is not a file" unless File.file?(path)
 
@@ -65,51 +80,69 @@ module MealSelector
       true
     end
 
+    # Sets the favorites state to watch for changes
+    # @return [void]
     def favorites_init
-      # sets the favoriate state to watch
       @favorite_state = @favorites.keys.sort
     end
 
+    # True if favorites change since `#favorite_init` was called
+    # @return [Boolean]
+    # @raise If `#favorites_changed?` is called before `#favorite_init`
     def favorites_changed?
-      # returns true if favorites change since
-      # favorite_init was called
+      raise 'favorite_init has not yet been called' if @favorite_state == :unset
+
       @favorite_state != @favorites.keys.sort
     end
 
+    # Clears favorites
+    # @return [void]
     def clear_favorites
-      # clears favorites
-      # favorites are change if not originally empty
       @favorites.clear
     end
 
     # Meal actions
 
+    # Find meals by name
+    # @param name [#to_s]
+    # @return [Hash] zero (`{}`) or more meals
     def find_meals_by_name(name)
-      # Returns one or more meals by name
       Meal.create_from_array(@api.search_meals_name(name))
     end
 
+    # find meals based on a category
+    # @param category [String]
+    # @raise if category is not in @categories
+    # @return [Hash] zero (`{}`) or more meals
     def find_meals_by_categories(category)
-      # Returns list of meals based on a category
       raise '@categories is empty' if @categories.empty?
+      raise 'category must be a string' unless category.is_a?(String)
       raise 'Provided category is not valid' unless @categories.include?(category.capitalize)
 
       meals = @api.meals_by_category(category)
       Meal.create_from_array(meals)
     end
 
+    # Finds meals based on primary ingredient
+    # @param primary_ingredient [String]
+    # @return [Hash] hash of zero (`{}`) or more meals
     def find_meal_by_ingredient(primary_ingredient)
-      # Outputs a meals based on ingredient
       meals_hsh = @api.search_by_ingredient(primary_ingredient.downcase)
       Meal.create_from_array(meals_hsh)
     end
 
+    # Finds random meal object
+    # @return [Meal] single meal
     def find_random_meal
-      # Provides a random meal object
       Meal.new(@api.random_meal)
     end
 
+    # Creates a whole meal if a meal is not.
+    # @param meal [Meal]
+    # @return [Meal] whole meal
     def resolve_meal(meal)
+      raise 'Must be a meal object' unless meal.is_a?(Meal)
+
       resolved =  if meal.whole_meal?
                     meal
                   else
@@ -121,8 +154,8 @@ module MealSelector
 
     private
 
+    # Converts to categories array
     def populate_categories(category_hsh)
-      # Converts to categories array
       raise 'Incorrect category_hash' if category_hsh[:meals].nil?
 
       category_hsh[:meals].collect { |cat| cat[:strCategory] }
