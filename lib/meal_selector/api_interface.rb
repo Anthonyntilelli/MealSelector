@@ -100,7 +100,7 @@ module MealSelector
     end
 
     # Saves ApiInterface to a file
-    # @param path [string]
+    # @param path [String]
     # @raise [RuntimeError] When attempting to safe debug key
     # @note will overwrite existing file
     def save(path = DEFAULT_KEY_PATH)
@@ -127,7 +127,7 @@ module MealSelector
 
     private
 
-    # makes api call and returns parsed data
+    # Makes api call and returns parsed data
     # On error will retry 3 times
     def api_call(endpoint)
       raise 'endpoint must be string' unless endpoint.is_a?(String)

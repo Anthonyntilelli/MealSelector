@@ -4,8 +4,8 @@
 # @author Anthony Tilelli
 module MealSelector
   # Menu for MealSelector
-  # Call #menu to start program
   class MealSelector
+
     # Set up Frontend and Backend
     def initialize
       # Trys to load key from file
@@ -22,6 +22,8 @@ module MealSelector
       @frontend = Frontend.new
     end
 
+    # Main menu for Meal Selector
+    # @return [void]
     def menu
       quit = false
       until quit
@@ -41,10 +43,9 @@ module MealSelector
 
     private
 
+    # Get key and version from user
+    # return  backend
     def init_kv_dialog
-      # Get key and version from user
-      # return  backend
-
       backend = nil
       while backend.nil?
         puts 'To start using Meal Selector, please input below info:'
@@ -82,8 +83,8 @@ module MealSelector
       @backend.save_api_info if answer == 'Y'
     end
 
+    # returns allowed input
     def meal_second_half
-      # returns allowed input
       allowed_array = ['quit']
       if @frontend.last_meal
         puts "`l` Show `#{@frontend.last_meal.name}` again"
@@ -105,9 +106,9 @@ module MealSelector
       allowed_array
     end
 
+    # Runs endusers selection
+    # returns quit [t/f]
     def menu_dispatcher(input)
-      # Runs endusers selection
-      # returns quit
       quit = false
       case input
       when '1'
@@ -140,8 +141,8 @@ module MealSelector
       quit
     end
 
+    # Ask user if they want to clear favorites
     def favorite_clear_dialog
-      # Ask user if they want to clear favorites
       print 'Are you sure?[y/n] '
       user_confirmation = Frontend.user_input(0, 'y', 'n')
       if user_confirmation == 'y'

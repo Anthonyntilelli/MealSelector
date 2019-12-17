@@ -11,7 +11,7 @@ module MealSelector
     attr_reader :id, :name, :category, :instructions, \
                 :type, :ingredient, :youtube
 
-    # Creates a single meal_hash into a frozen Meal.
+    # Creates a frozen Meal from a single meal_hash.
     # @param meal_hash [Hash] must contain one meal in meal format `{ meals: [meal] }`
     def initialize(meal_hash)
       raise 'meal_hash must be a hash' unless meal_hash.is_a?(Hash)

@@ -10,18 +10,22 @@ module MealSelector
       @last_meal = nil
     end
 
+    # Marks old console output and clears screen
+    # @return [void]
     def self.clear
-      # Marks old Input and clears screen
-      puts '=== old console Output ==='
+      puts '==== old console Output above ===='
       puts `clear`
     end
 
+    # prompts  user input and check if allowed input
+    # @param list_size [Integer] must be positive number or Zero,
+    #  set to `0` to not accept numbers
+    # @param *char [Array<String>] list of allowed characters,
+    #  enter `''` to allow just enter without char or number
+    # @return [String.downcase]
     def self.user_input(list_size, *chars)
-      # prompts  user input and check if allowed input
-      # Assume starts with 1 (negative are invalid)
-      # set list_size to 0 to not accept numbers
-      # '' in *chars will allow for just enter
-      # user_input is returned as downsized string
+      # Number input starts with 1.
+      raise 'list_size must be an integer' unless list_size.is_a?(Integer)
       raise 'list_size cannot be negative' if list_size.negative?
 
       input = nil
@@ -39,12 +43,17 @@ module MealSelector
       end
     end
 
+    # Shows a whole meal
+    # @param meal [Meal] one Meal
+    # @param menu_only [Boolean] Determines if the back option should be allowed
+    #  (`back` option allowed on false)
+    # @param backend [Backend]
+    # @raise when meal is not a whole_meal
+    # @return [Boolean] previous section should repeat
     def show_meal(meal, menu_only, backend)
-      # Shows a meal
-      # menu_only determine if option to go back is allowed
-      # return if previous list should repeat [t/f]
       raise "meal is not a MealSelector::Meal, instead #{meal.class}" unless meal.is_a?(Meal)
-      raise 'backend is not a backend' unless backend.is_a?(Backend)
+      raise 'meal is not whole' unless meal.whole_meal?
+      raise 'backend is not a Backend' unless backend.is_a?(Backend)
 
       Frontend.clear
       @last_meal = meal
@@ -61,10 +70,13 @@ module MealSelector
       show_meal_actions(backend, meal, menu_only)
     end
 
+    # List meals provided
+    # @param [Hash] One or more meals
+    # @param menu_only [Boolean] Determines if the back option should be allowed
+    #  (`back` option allowed on false)
+    # @param backend [Backend]
+    # @return [Boolean] previous section should repeat
     def show_meal_list(meals, menu_only, backend)
-      # List meals
-      # menu_only determine if option to go back is allowed
-      # return if previous section should repeat [t/f]
       raise 'Meals is not a hash of meals' unless meals.is_a?(Hash)
       raise 'meals is empty' if meals.empty?
       raise 'backend is not a backend' unless backend.is_a?(Backend)
@@ -96,8 +108,10 @@ module MealSelector
       end
     end
 
+    # Search for meal by name
+    # @param backend [Backend]
+    # @return [void]
     def search_meal_by_name(backend)
-      # Search for meal by entered name
       repeat = true
       while repeat
         Frontend.clear
@@ -118,8 +132,10 @@ module MealSelector
       end
     end
 
+    # List categories user can choose from.
+    # @param backend [Backend]
+    # @return [void]
     def meals_by_categories(backend)
-      # List categories user can choose from
       repeat = true
       while repeat
         Frontend.clear
@@ -136,8 +152,10 @@ module MealSelector
       end
     end
 
+    # Search for meal by main ingrediant.
+    # @param backend [Backend]
+    # @return [void]
     def meals_by_main_ingrediant(backend)
-      # Search for meal by main ingrediant
       repeat = true
       while repeat
         Frontend.clear
@@ -160,9 +178,9 @@ module MealSelector
 
     private
 
+    # Executes options for show meal
+    # @return [Boolean] if previous list should repeat
     def show_meal_actions(backend, meal, menu_only)
-      # executes options for show meal
-      # return if previous list should repeat [t/f]
       allowed_input = ['m']
       if backend.favorites[meal.id].nil?
         unless menu_only
@@ -192,7 +210,7 @@ module MealSelector
       # Action
       if choice == 'v'
         puts "Launching #{meal.youtube}"
-        Launchy.open(meal.youtube)
+        suppress_output { Launchy.open(meal.youtube) }
         allowed_input.pop # remove v
         puts 'Select another option:'
         choice = Frontend.user_input(0, *allowed_input)
@@ -209,7 +227,19 @@ module MealSelector
       return true if choice == 'b'
       return false if choice == 'm'
 
-      raise "Unknown choice #{choice}"
+      raise "Unknown choice: #{choice}"
+    end
+
+    # Disables print for duration of block
+    def suppress_output
+      original_stdout = $stdout.clone
+      original_stderr = $stderr.clone
+      $stderr.reopen File.new('/dev/null', 'w')
+      $stdout.reopen File.new('/dev/null', 'w')
+      yield
+    ensure
+      $stdout.reopen original_stdout
+      $stderr.reopen original_stderr
     end
   end
 end
