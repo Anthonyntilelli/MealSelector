@@ -20,7 +20,7 @@ module MealSelector
     # prompts  user input and check if allowed input
     # @param list_size [Integer] must be positive number or Zero,
     #  set to `0` to not accept numbers
-    # @param *char [Array<String>] list of allowed characters,
+    # @param chars [Array<String>] list of allowed characters,
     #  enter `''` to allow just enter without char or number
     # @return [String.downcase]
     def self.user_input(list_size, *chars)
@@ -71,7 +71,7 @@ module MealSelector
     end
 
     # List meals provided
-    # @param [Hash] One or more meals
+    # @param meals [Hash] One or more meals
     # @param menu_only [Boolean] Determines if the back option should be allowed
     #  (`back` option allowed on false)
     # @param backend [Backend]
