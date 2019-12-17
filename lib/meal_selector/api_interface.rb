@@ -106,8 +106,8 @@ module MealSelector
     def save(path = DEFAULT_KEY_PATH)
       raise 'cannot save debug key' unless can_save?
 
-      File.open(path, 'w') \
-      { |file| file.write("version: #{@version}\nkey: #{@key}") }
+      File.open(path, 'w') { |file| file.write("version: #{@version}\nkey: #{@key}") }
+      File.chmod(0o600, path)
     end
 
     # Creates ApiInterface from a file

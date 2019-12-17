@@ -5,7 +5,6 @@
 module MealSelector
   # Menu for MealSelector
   class MealSelector
-
     # Set up Frontend and Backend
     def initialize
       # Trys to load key from file
